@@ -1,178 +1,124 @@
-import { useState } from 'react'
-import Button from '@mui/material/Button'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import CustomInput from '~/components/InputBar/CustomInput'
-import axios from 'axios'
+import React, { useState } from 'react'
+import { Form, Input, Button, Typography, Card, message } from 'antd'
+import { MailOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import { BACKEND_URI } from '~/API'
 import { GoogleLogin } from '@react-oauth/google'
 import { jwtDecode } from 'jwt-decode'
 
-const gradientBackgroundUri = 'https://i.ibb.co/HFMBf1q/Orange-And-White-Gradient-Background.jpg'
+const { Title, Text } = Typography
+
+const gradientBackgroundStyle = {
+  minHeight: '100vh',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundImage: 'url(https://i.ibb.co/sgjkdwF/download-1.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  padding: '20px',
+}
 
 const EmailPage = () => {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [otp, setOtp] = useState('')
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [form] = Form.useForm()
   const [showOTPInput, setShowOTPInput] = useState(false)
 
-  const handleEmailSubmit = async () => {
+  const handleEmailSubmit = async (values) => {
     try {
-      await axios.post(`${BACKEND_URI}/auth/email-verify`, { email })
+      await axios.post(`${BACKEND_URI}/auth/email-verify`, { email: values.email })
       setShowOTPInput(true)
+      message.success('OTP sent to your email')
     } catch (error) {
       if (error.response && error.response.status === 400) {
-        console.error('Email already registered')
-        setTimeout(() => {
-          navigate('/login')
-        }, 3000)
+        message.error('Email already registered')
+        setTimeout(() => navigate('/login'), 3000)
       } else {
-        console.error('Error sending email verification:', error)
+        message.error('Error sending email verification')
       }
     }
   }
 
-  const handleOTPSubmit = async () => {
+  const handleOTPSubmit = async (values) => {
     try {
-      const response = await axios.post(`${BACKEND_URI}/auth/register-otp`, { email, otp, username, password })
-      console.log(response.data)
+      const response = await axios.post(`${BACKEND_URI}/auth/register-otp`, values)
+      message.success('Registration successful')
       navigate('/login')
     } catch (error) {
-      console.error('Error verifying OTP:', error)
+      message.error('Error verifying OTP')
     }
-  }
-
-  const navigateToLogin = () => {
-    navigate('/login')
   }
 
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
       const decoded = jwtDecode(credentialResponse.credential)
       const { email, name, picture, sub } = decoded
-      const userData = {
-        email,
-        name,
-        picture,
-        sub,
-      }
-      const response = await axios.post(`${BACKEND_URI}/auth/login/google`, userData)
+      const response = await axios.post(`${BACKEND_URI}/auth/login/google`, { email, name, picture, sub })
       const { accessToken, refreshToken, currentUser } = response.data
+
       localStorage.setItem('accessToken', accessToken)
       localStorage.setItem('refreshToken', refreshToken)
       localStorage.setItem('currentUser', JSON.stringify(currentUser))
 
-      let localStorageCurrentUser = JSON.parse(localStorage.getItem('currentUser'))
-      if (!localStorageCurrentUser.username) {
-        const username = prompt('Please enter your username:')
-        if (username) {
-          const updateResponse = await axios.post(
-            `${BACKEND_URI}/user/update-username`,
-            { username },
-            {
-              headers: {
-                'Content-Type': 'application/json',
-                accessToken,
-              },
-            },
-          )
-          localStorageCurrentUser.username = updateResponse.data.username
-          localStorage.setItem('currentUser', JSON.stringify(localStorageCurrentUser))
-        } else {
-          console.error('Username is required.')
-          return
-        }
+      if (!currentUser.username) {
+        navigate(`/register/username/${sub}`)
+        return
       }
 
-      console.log('Login successful!')
+      message.success('Login successful!')
       navigate('/')
     } catch (err) {
-      console.error('Google login failed.')
+      message.error('Google login failed.')
     }
   }
 
-  const handleGoogleLoginError = () => {
-    console.error('Google login failed.')
-  }
-
   return (
-    <Box
-      sx={{
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundImage: `url(${gradientBackgroundUri})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        flexDirection: 'column',
-      }}
-    >
-      <Box
-        sx={{
-          bgcolor: (theme) => theme.palette.backgroundColor.primary,
-          borderRadius: 2,
-          padding: '6px',
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '14px' }}>
-          <Box sx={{ width: '100%', height: '35px' }}>
-            <img
-              src="https://i.postimg.cc/jd0dTYF1/logo.png"
-              alt="logo"
-              style={{ objectFit: 'cover', height: '100%' }}
-            />
-          </Box>
-          <Typography sx={{ fontSize: '22px' }}>Welcome to Saleso!</Typography>
-          <Typography sx={{ fontSize: '13px' }}>Create an account to experience many new things</Typography>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            bgcolor: (theme) => theme.palette.backgroundColor.secondary,
-            padding: '14px',
-          }}
-        >
-          <CustomInput label="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+    <div style={gradientBackgroundStyle}>
+      <Card style={{ width: 350 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img
+            src="https://i.ibb.co/CMSJMK3/Brandmark-make-your-logo-in-minutes-removebg-preview.png"
+            alt="logo"
+            style={{ height: 40, marginBottom: 16 }}
+          />
+          <Title level={3}>Welcome to Saleso!</Title>
+          <Text>Create an account to experience many new things</Text>
+        </div>
+        <Form form={form} onFinish={showOTPInput ? handleOTPSubmit : handleEmailSubmit} layout="vertical">
+          <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Please input a valid email!' }]}>
+            <Input prefix={<MailOutlined />} placeholder="Email" />
+          </Form.Item>
           {showOTPInput && (
             <>
-              <CustomInput label="OTP" type="password" value={otp} onChange={(e) => setOtp(e.target.value)} />
-              <CustomInput label="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-              <CustomInput
-                label="Password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <Form.Item name="otp" rules={[{ required: true, message: 'Please input the OTP!' }]}>
+                <Input prefix={<LockOutlined />} placeholder="OTP" />
+              </Form.Item>
+              <Form.Item name="username" rules={[{ required: true, message: 'Please input your username!' }]}>
+                <Input prefix={<UserOutlined />} placeholder="Username" />
+              </Form.Item>
+              <Form.Item name="password" rules={[{ required: true, message: 'Please input your password!' }]}>
+                <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+              </Form.Item>
             </>
           )}
-          <Button
-            variant="contained"
-            onClick={showOTPInput ? handleOTPSubmit : handleEmailSubmit}
-            sx={{
-              marginTop: '10px',
-              backgroundColor: (theme) => theme.other.primaryColor,
-              color: (theme) => theme.palette.textColor.primary,
-            }}
-          >
-            {showOTPInput ? 'Verify OTP' : 'Register'}
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              {showOTPInput ? 'Verify OTP' : 'Register'}
+            </Button>
+          </Form.Item>
+        </Form>
+        <div style={{ textAlign: 'center' }}>
+          <GoogleLogin onSuccess={handleGoogleLoginSuccess} onError={() => message.error('Google login failed.')} />
+        </div>
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          <Text>Already have an account? </Text>
+          <Button type="link" onClick={() => navigate('/login')}>
+            Login here
           </Button>
-          <Box sx={{ width: '100%', marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-            <GoogleLogin onSuccess={handleGoogleLoginSuccess} onError={handleGoogleLoginError} sx={{ width: '100%' }} />
-          </Box>
-        </Box>
-      </Box>
-      <Box sx={{ display: 'flex', marginTop: '4px', gap: '6px' }}>
-        <Typography sx={{ color: (theme) => theme.palette.textColor.secondary }}>Already have an account?</Typography>
-        <Typography sx={{ color: (theme) => theme.other.primaryColor, cursor: 'pointer' }} onClick={navigateToLogin}>
-          Login here
-        </Typography>
-      </Box>
-    </Box>
+        </div>
+      </Card>
+    </div>
   )
 }
 

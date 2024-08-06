@@ -1,8 +1,9 @@
-import HomePage from '~/pages/HomePage'
+import HomePage from '~/pages/HomePage/HomePage'
 import RegisterPage from '~/pages/RegisterPage'
 import UsernameGooglePage from '~/pages/UsernameGooglePage'
 import LoginPage from '~/pages/LoginPage'
-//* Layout
+import ProductPage from '~/pages/ProductPage'
+import CartPage from '~/pages/CartPage/CartPage'
 import DefaultLayout from '~/layout/defaultLayout'
 
 const publicRoutes = [
@@ -23,6 +24,22 @@ const publicRoutes = [
     element: (
       <DefaultLayout>
         <HomePage />
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: '/product/:productId',
+    element: (
+      <DefaultLayout>
+        <ProductPage />
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: '/cart',
+    element: (
+      <DefaultLayout>
+        <CartPage />
       </DefaultLayout>
     ),
   },

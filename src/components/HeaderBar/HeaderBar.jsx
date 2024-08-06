@@ -2,8 +2,16 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { Layout, Input, Avatar, Dropdown, Button, ConfigProvider, theme } from 'antd'
-import { HeartOutlined, ShoppingCartOutlined, UserOutlined, SearchOutlined, LogoutOutlined } from '@ant-design/icons'
+import {
+  HeartOutlined,
+  ShoppingCartOutlined,
+  UserOutlined,
+  SearchOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+} from '@ant-design/icons'
 import { BACKEND_URI } from '~/API'
+import SettingModal from '../SettingModal/SettingModal'
 
 const { Header } = Layout
 const { Search } = Input
@@ -11,6 +19,7 @@ const { Search } = Input
 const HeaderBar = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const [settingModalVisible, setSettingModalVisible] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState('/static/images/avatar/1.jpg')
   const currentUser = JSON.parse(localStorage.getItem('currentUser'))
   const [themeMode, setThemeMode] = useState(localStorage.getItem('mui-mode') || 'light')
@@ -69,6 +78,18 @@ const HeaderBar = () => {
     navigate('/cart')
   }
 
+  const handleSettingsClick = () => {
+    setSettingModalVisible(true)
+  }
+
+  const handleSettingModalClose = () => {
+    setSettingModalVisible(false)
+  }
+
+  const handleLogoClick = () => {
+    navigate('/')
+  }
+
   const dropdownItems = [
     {
       key: '1',
@@ -78,6 +99,12 @@ const HeaderBar = () => {
     },
     {
       key: '2',
+      label: 'Settings',
+      icon: <SettingOutlined />,
+      onClick: handleSettingsClick,
+    },
+    {
+      key: '3',
       label: 'Logout',
       icon: <LogoutOutlined />,
       onClick: handleLogout,
@@ -103,7 +130,11 @@ const HeaderBar = () => {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-          <div className="logo" style={{ display: 'flex', alignContent: 'content' }}>
+          <div
+            className="logo"
+            style={{ display: 'flex', alignContent: 'content', cursor: 'pointer' }}
+            onClick={handleLogoClick}
+          >
             <img
               src="https://i.ibb.co/CMSJMK3/Brandmark-make-your-logo-in-minutes-removebg-preview.png"
               alt="logo"
@@ -124,6 +155,7 @@ const HeaderBar = () => {
           </div>
         </div>
       </Header>
+      <SettingModal visible={settingModalVisible} onClose={handleSettingModalClose} />
     </ConfigProvider>
   )
 }

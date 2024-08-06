@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { ConfigProvider, theme } from 'antd'
 import Box from '@mui/material/Box'
 import HeaderBar from '~/components/HeaderBar/HeaderBar'
-import Footer from '~/components/Footer/Footer'
-import { Divider } from '@mui/material'
+// import AppFooter from '~/components/Footer/Footer'
 
 const DefaultLayout = ({ children }) => {
   const [themeMode, setThemeMode] = useState('light')
@@ -38,7 +37,7 @@ const DefaultLayout = ({ children }) => {
         >
           {children}
         </Box>
-        <Footer />
+        {/* <AppFooter /> */}
       </Box>
     </ConfigProvider>
   )

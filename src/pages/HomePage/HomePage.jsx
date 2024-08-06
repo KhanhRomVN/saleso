@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Space, message } from 'antd'
-import FlashSaleSlider from '~/components/Slider/FlashSaleSlider'
+import FlashSaleProduct from './components/FlashSaleProduct'
+import TopSellingProduct from './components/TopSellingProduct'
+import CategoriesProduct from '~/components/ProductLayout/CategoriesProduct'
 import CategoriesSlider from '~/components/Slider/CategoriesSlider'
-import TopSellingSlider from '~/components/Slider/TopSellingSlider'
-import CategoriesProduct from '~/components/Slider/CategoriesProduct'
 
 function HomePage() {
   const navigate = useNavigate()
@@ -18,10 +18,10 @@ function HomePage() {
   }, [navigate])
   return (
     <Space direction="vertical" style={{ width: '90%', padding: '8px' }} size={20}>
-      <FlashSaleSlider />
+      <FlashSaleProduct />
       <CategoriesSlider />
-      <TopSellingSlider />
-      <CategoriesProduct />
+      <TopSellingProduct />
+      <CategoriesProduct categories={['Laptops', 'Home & Living']} />
     </Space>
   )
 }

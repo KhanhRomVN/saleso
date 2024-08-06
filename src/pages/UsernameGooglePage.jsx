@@ -1,27 +1,34 @@
-import { useState } from 'react'
-import Button from '@mui/material/Button'
-import Box from '@mui/material/Box'
-import Typography from '@mui/material/Typography'
-import CustomInput from '~/components/InputBar/CustomInput'
+import React from 'react'
+import { Form, Input, Button, Typography, Card, message } from 'antd'
+import { UserOutlined } from '@ant-design/icons'
+import { useNavigate, useParams } from 'react-router-dom'
 import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
 import { BACKEND_URI } from '~/API'
-import { useParams } from 'react-router-dom'
 
-const gradientBackgroundUri = 'https://i.ibb.co/HFMBf1q/Orange-And-White-Gradient-Background.jpg'
+const { Title, Text } = Typography
+
+const gradientBackgroundStyle = {
+  minHeight: '100vh',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundImage: 'url(https://i.ibb.co/sgjkdwF/download-1.jpg)',
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  padding: '20px',
+}
 
 const UsernameGooglePage = () => {
   const { sub } = useParams()
   const navigate = useNavigate()
+  const [form] = Form.useForm()
 
-  const [username, setUsername] = useState('')
-
-  const handleRegister = async () => {
+  const handleRegister = async (values) => {
     try {
       const accessToken = localStorage.getItem('accessToken')
-      const response = await axios.post(
+      await axios.post(
         `${BACKEND_URI}/user/update-username`,
-        { username },
+        { username: values.username },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -29,71 +36,43 @@ const UsernameGooglePage = () => {
           },
         },
       )
-      console.log(response.data)
+      message.success('Username updated successfully')
       navigate('/')
     } catch (error) {
-      console.error('Error registering user:', error)
+      message.error('Error updating username')
     }
   }
 
   return (
-    <Box
-      sx={{
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundImage: `url(${gradientBackgroundUri})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        flexDirection: 'column',
-      }}
-    >
-      <Box
-        sx={{
-          bgcolor: (theme) => theme.palette.backgroundColor.primary,
-          borderRadius: 2,
-          padding: '6px',
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '14px' }}>
-          <Box sx={{ width: '100%', height: '35px' }}>
-            <img
-              src="https://i.postimg.cc/jd0dTYF1/logo.png"
-              alt="logo"
-              style={{ objectFit: 'cover', height: '100%' }}
-            />
-          </Box>
-          <Typography sx={{ fontSize: '22px' }}>Welcome to Saleso!</Typography>
-          <Typography sx={{ fontSize: '13px' }}>Please enter username to access the website</Typography>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            bgcolor: (theme) => theme.palette.backgroundColor.secondary,
-            padding: '14px',
-          }}
-        >
-          <CustomInput label="Username" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <Button
-            variant="contained"
-            onClick={handleRegister}
-            sx={{
-              marginTop: '10px',
-              backgroundColor: (theme) => theme.other.primaryColor,
-              color: (theme) => theme.palette.textColor.primary,
-            }}
-          >
-            Register
+    <div style={gradientBackgroundStyle}>
+      <Card style={{ width: 350 }}>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <img
+            src="https://i.ibb.co/CMSJMK3/Brandmark-make-your-logo-in-minutes-removebg-preview.png"
+            alt="logo"
+            style={{ height: 40, marginBottom: 16 }}
+          />
+          <Title level={3}>Welcome to Saleso!</Title>
+          <Text>Please enter username to access the website</Text>
+        </div>
+        <Form form={form} onFinish={handleRegister} layout="vertical">
+          <Form.Item name="username" rules={[{ required: true, message: 'Please input your username!' }]}>
+            <Input prefix={<UserOutlined />} placeholder="Username" />
+          </Form.Item>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              Register
+            </Button>
+          </Form.Item>
+        </Form>
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          <Text>Already have an account? </Text>
+          <Button type="link" onClick={() => navigate('/login')}>
+            Login here
           </Button>
-        </Box>
-      </Box>
-      <Box sx={{ display: 'flex', marginTop: '4px', gap: '6px' }}>
-        <Typography sx={{ color: (theme) => theme.palette.textColor.secondary }}>Already have an account?</Typography>
-        <Typography sx={{ color: (theme) => theme.other.primaryColor }}>Login here</Typography>
-      </Box>
-    </Box>
+        </div>
+      </Card>
+    </div>
   )
 }
 
