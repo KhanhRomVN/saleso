@@ -26,7 +26,11 @@ const publicRoutes = [
     path: "/",
     element: (
       <DefaultLayout>
-        <HomePage />
+        <HomePage
+          openCart={function (): void {
+            throw new Error("Function not implemented.");
+          }}
+        />
       </DefaultLayout>
     ),
   },
@@ -86,7 +90,11 @@ const publicRoutes = [
     path: "/search/:value",
     element: (
       <DefaultLayout>
-        <SearchPage />
+        <SearchPage
+          openCart={function (): void {
+            throw new Error("Function not implemented.");
+          }}
+        />
       </DefaultLayout>
     ),
   },
@@ -94,7 +102,11 @@ const publicRoutes = [
     path: "/categories/:id/:category_name",
     element: (
       <DefaultLayout>
-        <CategoriesSearch />
+        <CategoriesSearch
+          openCart={function (): void {
+            throw new Error("Function not implemented.");
+          }}
+        />
       </DefaultLayout>
     ),
   },
