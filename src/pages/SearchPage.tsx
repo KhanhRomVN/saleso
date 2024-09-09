@@ -11,6 +11,7 @@ import { postPublic } from "@/utils/authUtils";
 
 interface Product {
   id: string;
+  _id: string;
   name: string;
   image: string;
   price: number;
