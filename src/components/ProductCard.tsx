@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useContext } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -7,9 +7,11 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { post } from "@/utils/authUtils";
+import { ProductActionSidebarContext } from "@/context/ProductActionSidebarContext";
 
 interface Product {
   id: string;
+  _id: string;
   name: string;
   image: string;
   price: number;
@@ -19,17 +21,13 @@ interface Product {
 
 interface ProductCardProps {
   productData: Product;
-  openCart: (productId: string) => void;
   gridType: string;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({
-  productData,
-  openCart,
-  gridType,
-}) => {
+const ProductCard: React.FC<ProductCardProps> = ({ productData, gridType }) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const { openProductActionSidebar } = useContext(ProductActionSidebarContext);
 
   const totalStars = 5;
   const fullStars = Math.floor(productData.rating);
@@ -40,7 +38,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
     : null;
 
   const handleCardClick = useCallback(() => {
-    navigate(`/product/${productData.id}`);
+    navigate(`/product/${productData._id}`);
   }, [navigate, productData.id]);
 
   const handleAddToWishlist = useCallback(
@@ -64,13 +62,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
     [productData.id]
   );
 
-  const handleAddToCart = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      openCart(productData.id);
-    },
-    [openCart, productData.id]
-  );
+  const handleAddToCart = () => {
+    openProductActionSidebar(productData._id, "add-to-cart");
+  };
 
   const getGridSpecificStyles = useCallback(() => {
     switch (gridType) {
@@ -100,7 +94,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
         className="relative cursor-pointer overflow-hidden bg-background_secondary h-full flex flex-col"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={handleCardClick}
       >
         <CardContent className="p-2 flex flex-col h-full">
           <div className="relative flex-grow mb-2">
@@ -108,6 +101,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               src={productData.image}
               alt={productData.name}
               className={`object-cover rounded-lg transition-all duration-300 transform hover:scale-105 ${getGridSpecificStyles()}`}
+              onClick={handleCardClick}
             />
             <AnimatePresence>
               {isHovered && (
@@ -153,6 +147,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <h3
               className="font-semibold text-sm sm:text-base mb-1"
               title={productData.name}
+              onClick={handleCardClick}
             >
               {truncateName(productData.name, 20)}
             </h3>
@@ -169,7 +164,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   }`}
                 />
               ))}
-              <span className="ml-2 text-sm text-gray-600">
+              <span
+                className="ml-2 text-sm text-gray-600"
+                onClick={handleCardClick}
+              >
                 {productData.rating.toFixed(1)}
               </span>
             </div>
@@ -177,15 +175,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <div className="flex flex-col">
                 {discountedPrice ? (
                   <>
-                    <span className="text-gray-500 line-through text-xs sm:text-sm">
+                    <span
+                      className="text-gray-500 line-through text-xs sm:text-sm"
+                      onClick={handleCardClick}
+                    >
                       ${productData.price.toFixed(2)}
                     </span>
-                    <span className="font-bold text-primary text-sm sm:text-base">
+                    <span
+                      className="font-bold text-primary text-sm sm:text-base"
+                      onClick={handleCardClick}
+                    >
                       ${discountedPrice.toFixed(2)}
                     </span>
                   </>
                 ) : (
-                  <span className="font-bold text-primary text-sm sm:text-base">
+                  <span
+                    className="font-bold text-primary text-sm sm:text-base"
+                    onClick={handleCardClick}
+                  >
                     ${productData.price.toFixed(2)}
                   </span>
                 )}

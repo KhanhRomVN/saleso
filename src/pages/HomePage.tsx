@@ -1,8 +1,9 @@
 import ProductGrid from "@/components/ProductGrid";
-const BACKEND_URI = import.meta.env.VITE_BACKEND_URI;
 import Slider from "@/components/Slider";
+import { Clock, Star } from "lucide-react";
 
-const FlashsaleAPI = `${BACKEND_URI}/product/flash-sale`;
+const FlashsaleAPI = `/product/flash-sale`;
+const TopSellingAPI = `/product/top-sell`;
 const mainBannerBody = {
   type: "banner",
   ratio: "16:5",
@@ -13,63 +14,44 @@ const categoryBody = {
   ratio: "16:9",
 };
 
-const extraBannerBody = {
-  type: "banner",
-  ratio: "16:5",
-};
-
-const cardBody = {
-  type: "card",
-  ratio: "1:1",
-};
-
-interface HomePageProps {
-  openCart: (productId: string) => void;
-}
-
-function HomePage({ openCart }: HomePageProps) {
+function HomePage() {
   return (
-    <div>
+    <div className="h-[1000px]">
       <div className="flex flex-col gap-4">
         <Slider
-          api="http://localhost:8080/gallery/filter"
+          api="/gallery/filter"
           body={mainBannerBody}
           itemPerSlide={1}
-          noActionArrow={false}
+          noActionArrow={true}
         />
         <p className="pl-5 text-xl">Top Categories</p>
         <Slider
-          api="http://localhost:8080/gallery/filter"
+          api="/gallery/filter"
           body={categoryBody}
           itemPerSlide={4}
+          noActionArrow={true}
         />
       </div>
-
       <ProductGrid
-        title="Flashsale"
+        title={
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            <span className="text-xl">Flashsale</span>
+          </div>
+        }
         api={FlashsaleAPI}
         grid="1x4"
-        openCart={openCart}
       />
-      <div className="flex justify-center items-center">
-        <div className="w-[75%]">
-          <Slider
-            api="http://localhost:8080/gallery/filter"
-            body={extraBannerBody}
-            itemPerSlide={1}
-            noActionArrow={false}
-          />
-        </div>
-        <div className="w-[25%]">
-          {" "}
-          <Slider
-            api="http://localhost:8080/gallery/filter"
-            body={cardBody}
-            itemPerSlide={1}
-            noActionArrow={false}
-          />
-        </div>
-      </div>
+      <ProductGrid
+        title={
+          <div className="flex items-center gap-2">
+            <Star className="w-5 h-5 text-primary" />
+            <span className="text-xl">HotSale</span>
+          </div>
+        }
+        api={TopSellingAPI}
+        grid="1x4"
+      />
     </div>
   );
 }

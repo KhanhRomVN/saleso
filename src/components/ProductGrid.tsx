@@ -6,9 +6,11 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ProductCard from "./ProductCard";
 import { postPublic } from "@/utils/authUtils";
+import ProductActionSidebar from "./ProductActionSidebar";
 
 interface Product {
   id: string;
+  _id: string;
   name: string;
   image: string;
   price: number;
@@ -18,11 +20,10 @@ interface Product {
 }
 
 interface ProductGridProps {
-  title: string;
+  title: React.ReactNode;
   api?: string;
   productList?: Product[];
   grid: "1x4" | "2x4" | "3x4" | "3x5" | "8x2" | "4x3" | "5x3";
-  openCart: (productId: string) => void;
 }
 
 const gridConfigs = {
@@ -55,7 +56,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   api,
   productList,
   grid,
-  openCart,
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -113,11 +113,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <ProductCard
-                    productData={product}
-                    openCart={openCart}
-                    gridType={grid}
-                  />
+                  <ProductCard productData={product} gridType={grid} />
                 </motion.div>
               ))}
             </motion.div>
@@ -152,6 +148,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
           </div>
         )}
       </CardContent>
+      <ProductActionSidebar />
       <ToastContainer />
     </Card>
   );

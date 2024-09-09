@@ -26,10 +26,6 @@ interface ProductsResponse {
   products: any[];
 }
 
-interface CategoriesSearchProps {
-  openCart: (productId: string) => void;
-}
-
 interface Filters {
   listCategory: string[];
   page: number;
@@ -42,7 +38,7 @@ interface Filters {
   listAttribute?: string[];
 }
 
-const CategoriesSearch: React.FC<CategoriesSearchProps> = ({ openCart }) => {
+const CategoriesSearch: React.FC = () => {
   const { id, category_name } = useParams<{
     id: string;
     category_name: string;
@@ -194,7 +190,6 @@ const CategoriesSearch: React.FC<CategoriesSearchProps> = ({ openCart }) => {
                 title={`Search product by [${category_name}]`}
                 productList={productsData.products}
                 grid="3x4"
-                openCart={openCart}
               />
               <div className="mt-4 flex justify-center items-center space-x-2">
                 <Button

@@ -9,8 +9,6 @@ import OrderSuccessPage from "./pages/OrderSuccessPage";
 import SettingPage from "./pages/SettingPage";
 import SearchPage from "./pages/SearchPage";
 import CategoriesSearch from "./pages/CategoriesSearch";
-
-// Layout Component
 import DefaultLayout from "@/layout/defaultLayout";
 
 const publicRoutes = [
@@ -26,11 +24,7 @@ const publicRoutes = [
     path: "/",
     element: (
       <DefaultLayout>
-        <HomePage
-          openCart={function (): void {
-            throw new Error("Function not implemented.");
-          }}
-        />
+        <HomePage />
       </DefaultLayout>
     ),
   },
@@ -46,11 +40,7 @@ const publicRoutes = [
     path: "/wishlist",
     element: (
       <DefaultLayout>
-        <WishlistPage
-          openCart={function (): void {
-            throw new Error("Function not implemented.");
-          }}
-        />
+        <WishlistPage />
       </DefaultLayout>
     ),
   },
@@ -90,11 +80,7 @@ const publicRoutes = [
     path: "/search/:value",
     element: (
       <DefaultLayout>
-        <SearchPage
-          openCart={function (): void {
-            throw new Error("Function not implemented.");
-          }}
-        />
+        <SearchPage />
       </DefaultLayout>
     ),
   },
@@ -102,11 +88,7 @@ const publicRoutes = [
     path: "/categories/:id/:category_name",
     element: (
       <DefaultLayout>
-        <CategoriesSearch
-          openCart={function (): void {
-            throw new Error("Function not implemented.");
-          }}
-        />
+        <CategoriesSearch />
       </DefaultLayout>
     ),
   },

@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { getPublic, post } from "@/utils/authUtils";
-
-interface CartSidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
-  productId: string | null;
-}
+import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { ProductActionSidebarContext } from "@/context/ProductActionSidebarContext";
 
 interface ProductAttribute {
   attributes_value: string;
@@ -47,19 +44,26 @@ interface Product {
   seller_id: string;
 }
 
+// for action: add-to-cart
 interface CartData {
   product_id: string;
   selected_attributes_value?: string;
   quantity: number;
 }
 
-const CartSidebar: React.FC<CartSidebarProps> = ({
-  isOpen,
-  onClose,
-  productId,
-}) => {
-  console.log(productId);
+// for action: buy-now
+interface checkoutSessionData {
+  product_id: string;
+  selected_attributes_value?: string;
+  quantity: number;
+}
 
+const ProductActionSidebar: React.FC = () => {
+  const { isOpen, productId, action, closeProductActionSidebar } = useContext(
+    ProductActionSidebarContext
+  );
+
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,8 +72,8 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
   );
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [zoomLevel, setZoomLevel] = useState(1);
 
+  // fetch product data
   useEffect(() => {
     const fetchProduct = async () => {
       if (!productId) return;
@@ -92,20 +96,6 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
     fetchProduct();
   }, [productId]);
 
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "cart-sidebar" && e.newValue === "closed") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, [onClose]);
-
   const getStock = () => {
     if (!product) return null;
     if (product.stock !== undefined) return product.stock;
@@ -122,27 +112,6 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
     const stock = getStock();
     if (stock !== null) {
       setQuantity(Math.min(Math.max(1, value), stock));
-    }
-  };
-
-  const handleAddToCart = async () => {
-    if (!product) return;
-
-    const cartData: CartData = {
-      product_id: product._id,
-      quantity: quantity,
-    };
-
-    if (product.attributes && selectedAttribute) {
-      cartData.selected_attributes_value = selectedAttribute;
-    }
-
-    try {
-      const response = await post<{ message: string }>("/cart", cartData);
-      console.log("Product added to cart:", response.message);
-      onClose();
-    } catch (error) {
-      console.error("Error adding product to cart:", error);
     }
   };
 
@@ -163,12 +132,46 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
     }
   };
 
-  const handleZoomIn = () => {
-    setZoomLevel((prevZoom) => Math.min(prevZoom + 0.5, 3));
+  // for action: add-to-cart
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    const cartData: CartData = {
+      product_id: product._id,
+      quantity: quantity,
+    };
+
+    if (product.attributes && selectedAttribute) {
+      cartData.selected_attributes_value = selectedAttribute;
+    }
+
+    try {
+      const response = await post<{ message: string }>("/cart", cartData);
+      console.log("Product added to cart:", response.message);
+    } catch (error) {
+      console.error("Error adding product to cart:", error);
+    }
   };
 
-  const handleZoomOut = () => {
-    setZoomLevel((prevZoom) => Math.max(prevZoom - 0.5, 1));
+  // for action: buy-now
+  const handleCreateSessionCheckout = async () => {
+    if (!product) return;
+
+    const checkoutSessionData: checkoutSessionData = {
+      product_id: product._id,
+      quantity: quantity,
+    };
+
+    if (product.attributes && selectedAttribute) {
+      checkoutSessionData.selected_attributes_value = selectedAttribute;
+    }
+
+    try {
+      await post<{ message: string }>("/sesion/checkout", checkoutSessionData);
+      navigate("/checkout");
+    } catch (error) {
+      console.error("Error adding product to cart:", error);
+    }
   };
 
   return (
@@ -180,7 +183,6 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
           />
           <motion.div
             className="fixed top-0 right-0 w-2/5 h-screen bg-background shadow-lg z-50 overflow-y-auto"
@@ -190,10 +192,20 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
             transition={{ type: "tween", duration: 0.3 }}
           >
             <div className="p-4">
-              <Button variant="ghost" className="float-right" onClick={onClose}>
+              <Button
+                variant="ghost"
+                className="float-right"
+                onClick={closeProductActionSidebar}
+              >
                 <X size={24} />
               </Button>
-              <h2 className="text-xl font-bold mb-4">Add to cart</h2>
+
+              {action === "add-to-cart" ? (
+                <h2 className="text-xl font-bold mb-4">Add to cart</h2>
+              ) : (
+                <h2 className="text-xl font-bold mb-4">Buy now</h2>
+              )}
+
               {loading && <p>Loading...</p>}
               {error && <p className="text-red-500">{error}</p>}
               {product && (
@@ -217,19 +229,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
                             src={product.images[currentImageIndex]}
                             alt={product.name}
                             className="w-full h-auto"
-                            style={{
-                              transform: `scale(${zoomLevel})`,
-                              transition: "transform 0.3s ease-in-out",
-                            }}
                           />
-                          <div className="absolute top-2 right-2 space-x-2">
-                            <Button onClick={handleZoomIn}>
-                              <ZoomIn size={20} />
-                            </Button>
-                            <Button onClick={handleZoomOut}>
-                              <ZoomOut size={20} />
-                            </Button>
-                          </div>
                         </div>
                       </DialogContent>
                     </Dialog>
@@ -345,12 +345,21 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
                     </div>
                   </div>
 
-                  <Button
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                    onClick={handleAddToCart}
-                  >
-                    Add to Cart
-                  </Button>
+                  {action === "add-to-cart" ? (
+                    <Button
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      onClick={handleAddToCart}
+                    >
+                      Add to Cart
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      onClick={handleCreateSessionCheckout}
+                    >
+                      Buy now
+                    </Button>
+                  )}
                 </motion.div>
               )}
             </div>
@@ -361,4 +370,4 @@ const CartSidebar: React.FC<CartSidebarProps> = ({
   );
 };
 
-export default CartSidebar;
+export default ProductActionSidebar;

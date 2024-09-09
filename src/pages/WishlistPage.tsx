@@ -20,11 +20,7 @@ interface Product {
   stock: number;
 }
 
-interface WishlistPageProps {
-  openCart: (productId: string) => void;
-}
-
-const WishlistPage: React.FC<WishlistPageProps> = ({ openCart }) => {
+const WishlistPage: React.FC = () => {
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,9 +39,7 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ openCart }) => {
     }
   };
 
-  const handleAddToCart = (productId: string) => {
-    openCart(productId);
-  };
+  const handleAddToCart = (_productId: string) => {};
 
   const handleRemoveFromWishlist = async (productId: string) => {
     try {

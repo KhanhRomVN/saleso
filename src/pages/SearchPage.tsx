@@ -19,10 +19,6 @@ interface Product {
   discount_value?: number;
 }
 
-interface SearchPageProps {
-  openCart: (productId: string) => void;
-}
-
 interface FilterOptions {
   value?: string;
   countryOfOrigin?: string;
@@ -34,7 +30,7 @@ interface FilterOptions {
   sortOrder?: "asc" | "desc";
 }
 
-const SearchPage: React.FC<SearchPageProps> = ({ openCart }) => {
+const SearchPage: React.FC = () => {
   const { value } = useParams<{ value: string }>();
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
@@ -128,7 +124,6 @@ const SearchPage: React.FC<SearchPageProps> = ({ openCart }) => {
               title={`Showing search results for "${value}"`}
               productList={products}
               grid="4x3"
-              openCart={openCart}
             />
           )}
           {totalPages > 1 && (
