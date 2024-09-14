@@ -713,6 +713,7 @@ const AccountContent: React.FC = () => {
 };
 
 const AddressContent: React.FC = () => {
+  console.log("CC")
   // useEffect(() => {
   //   fetchAddresses();
   // }, []);

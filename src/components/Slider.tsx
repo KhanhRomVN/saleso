@@ -38,8 +38,6 @@ const Slider: React.FC<SliderProps> = ({
     const fetchItems = async () => {
       try {
         const response = await postPublic<{ images: SliderItem[] }>(api, body);
-        console.log(response);
-
         setItems(response.images);
       } catch (error) {
         console.error("Error fetching slider items:", error);

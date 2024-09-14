@@ -53,7 +53,7 @@ const publicRoutes = [
     ),
   },
   {
-    path: "/checkout",
+    path: "/checkout/:session_id",
     element: (
       <DefaultLayout>
         <CheckoutPage />

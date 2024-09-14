@@ -22,7 +22,7 @@ const DefaultLayout: React.FC<DefaultLayoutProps> = ({ children }) => {
         <MainHeader />
         <MenuHeader />
       </motion.div>
-      <div className="flex flex-1">
+      <div className="flex flex-1 pb-10">
         <main className="flex-1 overflow-y-hidden pt-[128px] px-8">
           {children}
         </main>

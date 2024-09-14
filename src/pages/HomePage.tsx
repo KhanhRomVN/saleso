@@ -16,7 +16,7 @@ const categoryBody = {
 
 function HomePage() {
   return (
-    <div className="h-[1000px]">
+    <div>
       <div className="flex flex-col gap-4">
         <Slider
           api="/gallery/filter"

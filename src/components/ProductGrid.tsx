@@ -15,7 +15,6 @@ interface Product {
   image: string;
   price: number;
   rating: number;
-  seller_id: string;
   discount_value?: number;
 }
 

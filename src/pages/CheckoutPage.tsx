@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import * as authUtils from "@/utils/authUtils";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -15,393 +21,432 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { motion } from "framer-motion";
 import {
   ShoppingCart,
   Truck,
   CreditCard,
   Tag,
-  ChevronRight,
-  Package,
+  Percent,
+  DollarSign,
+  Clock,
 } from "lucide-react";
-import { post, getPublic } from "@/utils/authUtils";
+import { Progress } from "@/components/ui/progress";
 
-interface CheckoutItem {
-  product_id: string;
-  name: string;
-  image: string;
-  price: number;
-  quantity: number;
+interface Variant {
+  sku: string;
   stock: number;
-  selected_attributes_value?: string;
+  price: number;
 }
 
 interface Discount {
   _id: string;
   code: string;
   type: string;
-  value: number | { buyQuantity: number; getFreeQuantity: number };
-  endDate: string;
-  maxUses: number;
+  value: number;
+  minimum_purchase: number;
+  max_uses: number;
+  current_uses: number;
 }
 
-interface CheckoutData {
-  items: CheckoutItem[];
+interface CheckoutItem {
+  product_id: string;
+  name: string;
+  images: string[];
+  quantity: number;
+  selected_sku: string;
+  price: number;
+  variants: Variant[];
+  discounts: Discount[];
+  appliedDiscount: Discount | null;
+}
+
+interface SessionResponse {
+  data: { product_id: string; selected_sku: string; quantity: number };
+}
+
+interface CartResponse {
+  selected_sku: string;
+  quantity: number;
+}
+
+interface ProductResponse {
+  name: string;
+  images: string[];
+  variants: Variant[];
 }
 
 const CheckoutPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [checkoutData, setCheckoutData] = useState<CheckoutData>({ items: [] });
+  const { session_id } = useParams<{ session_id: string }>();
+  const [checkoutData, setCheckoutData] = useState<CheckoutItem[]>([]);
   const [shippingAddress, setShippingAddress] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [discountDialogOpen, setDiscountDialogOpen] = useState(false);
-  const [currentProductId, setCurrentProductId] = useState("");
-  const [discounts, setDiscounts] = useState<Discount[]>([]);
-  const [appliedDiscounts, setAppliedDiscounts] = useState<
-    Record<string, Discount>
-  >({});
-
-  const shippingAddresses = [
-    "123 Main St, Anytown, USA",
-    "456 Elm St, Somewhere, USA",
-  ];
-
-  const paymentMethods = ["Pay now", "Pay on delivery"];
+  const [paymentMethod, setPaymentMethod] = useState("prepaid");
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedData = localStorage.getItem("checkoutData");
-    if (storedData) {
-      setCheckoutData(JSON.parse(storedData));
-    }
-  }, []);
+    const fetchCheckoutData = async () => {
+      if (!session_id) return;
 
-  const calculateItemTotal = (item: CheckoutItem): number => {
-    const shipping_fee = 20;
-    let total = item.price * item.quantity + shipping_fee;
-    const discount = appliedDiscounts[item.product_id];
-    if (discount) {
-      if (discount.type === "flash-sale" || discount.type === "percentage") {
-        total -= total * ((discount.value as number) / 100);
-      } else if (discount.type === "fixed") {
-        total -= discount.value as number;
-      } else if (discount.type === "buy-x-get-y") {
-        const { buyQuantity, getFreeQuantity } = discount.value as {
-          buyQuantity: number;
-          getFreeQuantity: number;
-        };
-        const sets = Math.floor(item.quantity / buyQuantity);
-        const freeItems = Math.min(
-          sets * getFreeQuantity,
-          item.stock - item.quantity
+      try {
+        setIsLoading(true);
+        const response = await authUtils.get<SessionResponse>(
+          `/session/get/${session_id}`
         );
-        total = (item.quantity + freeItems) * item.price;
-      }
-    }
-    return Math.max(total, 0);
-  };
 
-  const calculateTotal = (): number => {
-    return checkoutData.items.reduce(
-      (acc, item) => acc + calculateItemTotal(item),
+        let processedData: CheckoutItem[] = [];
+
+        if (Array.isArray(response.data)) {
+          processedData = await Promise.all(
+            response.data.map(async (product_id) => {
+              const [cartResponse, productResponse] = await Promise.all([
+                authUtils.get<CartResponse>(`/cart/by-product/${product_id}`),
+                authUtils.get<ProductResponse>(
+                  `/product/by-product/${product_id}`
+                ),
+              ]);
+
+              return {
+                product_id,
+                ...cartResponse,
+                ...productResponse,
+                price:
+                  productResponse.variants.find(
+                    (v) => v.sku === cartResponse.selected_sku
+                  )?.price || 0,
+                discounts: [],
+                appliedDiscount: null,
+              };
+            })
+          );
+        } else {
+          const productResponse = await authUtils.get<ProductResponse>(
+            `/product/by-product/${response.data.product_id}`
+          );
+          processedData.push({
+            ...response.data,
+            ...productResponse,
+            price:
+              productResponse.variants.find(
+                (v) => v.sku === response.data.selected_sku
+              )?.price || 0,
+            discounts: [],
+            appliedDiscount: null,
+          });
+        }
+
+        setCheckoutData(processedData);
+        calculateTotal(processedData);
+      } catch (error) {
+        console.error("Error fetching checkout data:", error);
+        toast.error("Failed to load checkout data. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCheckoutData();
+  }, [session_id]);
+
+  const calculateTotal = (data: CheckoutItem[]) => {
+    const subtotal = data.reduce(
+      (acc, item) => acc + item.price * item.quantity,
       0
     );
+    const shippingFee = 10; // Default shipping fee
+    setTotalAmount(subtotal + shippingFee);
   };
 
-  const handleApplyDiscount = async (productId: string) => {
-    setCurrentProductId(productId);
+  const handleUseDiscount = async (index: number) => {
     try {
-      // Use get function from authUtils
-      const response = await getPublic<Discount[]>(
-        `/discount/by-product/${productId}`
+      const product = checkoutData[index];
+      const response = await authUtils.get<Discount[]>(
+        `/product/by-product-with-discount/${product.product_id}`
       );
-      setDiscounts(response);
-      setDiscountDialogOpen(true);
+      const updatedCheckoutData = [...checkoutData];
+      updatedCheckoutData[index].discounts = response;
+      setCheckoutData(updatedCheckoutData);
     } catch (error) {
       console.error("Error fetching discounts:", error);
+      toast.error("Failed to fetch discounts. Please try again.");
     }
   };
 
-  const handleSelectDiscount = (discount: Discount) => {
-    setAppliedDiscounts((prev) => ({
-      ...prev,
-      [currentProductId]: discount,
-    }));
-    setDiscountDialogOpen(false);
+  const applyDiscount = (index: number, discount: Discount) => {
+    const updatedCheckoutData = [...checkoutData];
+    const item = updatedCheckoutData[index];
+
+    if (
+      item.price >= discount.minimum_purchase &&
+      discount.current_uses < discount.max_uses
+    ) {
+      let discountedPrice = item.price;
+
+      if (discount.type === "free-shipping") {
+        setTotalAmount((prevTotal) => prevTotal - (10 * discount.value) / 100);
+      } else {
+        discountedPrice = item.price * (1 - discount.value / 100);
+      }
+
+      item.price = discountedPrice;
+      item.appliedDiscount = discount;
+      setCheckoutData(updatedCheckoutData);
+      calculateTotal(updatedCheckoutData);
+      toast.success(`Discount ${discount.code} applied successfully!`);
+    } else {
+      toast.error("This discount cannot be applied to this item.");
+    }
   };
 
-  const handleFinalCheckout = async () => {
-    const orderItems = checkoutData.items.map((item) => {
-      const discount = appliedDiscounts[item.product_id];
-      const shipping_fee = 20;
-      const total = calculateItemTotal(item).toFixed(2);
-
-      return {
+  const handleCheckout = async () => {
+    try {
+      const orderItems = checkoutData.map((item) => ({
         product_id: item.product_id,
         quantity: item.quantity,
-        selected_attributes_value: item.selected_attributes_value,
-        total_amount: parseFloat(total),
-        discount_id: discount ? discount._id : undefined,
+        sku: item.selected_sku,
+        total_amount: item.price * item.quantity,
+        shipping_fee: 10,
         shipping_address: shippingAddress,
-        shipping_fee: shipping_fee,
+      }));
+
+      const orderData = {
+        orderItems,
+        payment_method: paymentMethod,
+        payment_status: paymentMethod === "prepaid" ? "unpaid" : "paid",
       };
-    });
 
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-      if (!accessToken) {
-        alert("Please log in to complete the checkout");
-        return;
-      }
+      await authUtils.post("/order", orderData);
 
-      if (paymentMethod === "Pay on delivery") {
-        // Use post function from authUtils
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const response = await post<any>("/order", {
-          orderItems,
-          payment_method: "postpaid",
-          payment_status: "pending",
-        });
-        console.log("Order created successfully:", response);
-        navigate("/order-success");
-      } else {
-        localStorage.setItem(
-          "paymentData",
-          JSON.stringify({
-            orderItems,
-            total: calculateTotal(),
-            shippingAddress,
-            paymentMethod: "prepaid",
-          })
-        );
-        navigate("/payment");
-      }
+      toast.success("Order placed successfully!");
+      // Redirect to order confirmation page or clear cart
     } catch (error) {
-      console.error("Error creating order:", error);
+      console.error("Error placing order:", error);
+      toast.error("Failed to place order. Please try again.");
     }
   };
 
+  if (isLoading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <ShoppingCart className="w-12 h-12 text-blue-500" />
+        </motion.div>
+      </div>
+    );
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-blue-600">
-        <ShoppingCart className="inline-block mr-2" /> Checkout
-      </h1>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="container mx-auto p-4 min-h-screen"
+    >
+      <ToastContainer position="top-right" autoClose={3000} />
+      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
       <div className="flex flex-col lg:flex-row gap-8">
-        <div className="flex-grow space-y-6">
-          {checkoutData.items.map((item) => (
-            <CheckoutItem
-              key={item.product_id}
-              item={item}
-              appliedDiscount={appliedDiscounts[item.product_id]}
-              onApplyDiscount={handleApplyDiscount}
-              total={calculateItemTotal(item)}
-            />
-          ))}
+        <div className="w-full lg:w-2/3">
+          <Card className="mb-8 bg-background_secondary">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold flex items-center">
+                <ShoppingCart className="w-6 h-6 mr-2" />
+                Your Items
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AnimatePresence>
+                {checkoutData.map((item, index) => (
+                  <motion.div
+                    key={item.product_id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-4 p-4 bg-background rounded-lg shadow"
+                  >
+                    <div className="flex items-start">
+                      <img
+                        src={item.images[0]}
+                        alt={item.name}
+                        className="w-24 h-24 object-cover rounded-md mr-4"
+                      />
+                      <div className="flex-grow">
+                        <h3 className="text-lg font-semibold">{item.name}</h3>
+                        <p className="text-sm text-gray-600">
+                          Quantity: {item.quantity}
+                        </p>
+                        <p className="text-sm font-medium">
+                          Price: ${item.price.toFixed(2)}
+                        </p>
+                        <DiscountDialog
+                          item={item}
+                          index={index}
+                          handleUseDiscount={handleUseDiscount}
+                          applyDiscount={applyDiscount}
+                        />
+                        {item.appliedDiscount && (
+                          <div className="flex items-center mt-2 text-green-600">
+                            <Tag className="w-4 h-4 mr-2" />
+                            <span>Applied: {item.appliedDiscount.code}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
         </div>
 
-        <OrderSummary
-          total={calculateTotal()}
-          shippingAddresses={shippingAddresses}
-          paymentMethods={paymentMethods}
-          onShippingAddressChange={setShippingAddress}
-          onPaymentMethodChange={setPaymentMethod}
-          onCheckout={handleFinalCheckout}
-        />
-      </div>
+        <div className="w-full lg:w-1/3">
+          <Card className="bg-background_secondary">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">
+                Order Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold mb-2 flex items-center">
+                  <Truck className="w-5 h-5 mr-2" />
+                  Shipping Information
+                </h2>
+                <Input
+                  type="text"
+                  value={shippingAddress}
+                  onChange={(e) => setShippingAddress(e.target.value)}
+                  placeholder="Enter shipping address"
+                  className="w-full"
+                />
+              </div>
 
-      <DiscountDialog
-        open={discountDialogOpen}
-        onOpenChange={setDiscountDialogOpen}
-        discounts={discounts}
-        onSelectDiscount={handleSelectDiscount}
-      />
-    </div>
+              <div>
+                <h2 className="text-xl font-semibold mb-2 flex items-center">
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Payment Method
+                </h2>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(value: string) => setPaymentMethod(value)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prepaid">Prepaid</SelectItem>
+                    <SelectItem value="postpaid">Postpaid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="bg-background p-4 rounded-lg">
+                <h2 className="text-xl font-semibold mb-2">Order Total</h2>
+                <div className="flex justify-between mb-2">
+                  <span>Subtotal:</span>
+                  <span>${totalAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between mb-2">
+                  <span>Shipping Fee:</span>
+                  <span>$10.00</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-gray-300">
+                  <span>Total:</span>
+                  <span>${(totalAmount + 10).toFixed(2)}</span>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleCheckout}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Place Order
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
-interface CheckoutItemProps {
-  item: CheckoutItem;
-  appliedDiscount?: Discount;
-  onApplyDiscount: (productId: string) => void;
-  total: number;
-}
-
-const CheckoutItem: React.FC<CheckoutItemProps> = ({
-  item,
-  appliedDiscount,
-  onApplyDiscount,
-  total,
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.3 }}
-  >
-    <Card className="hover:shadow-lg bg-background_secondary transition-shadow duration-300">
-      <CardHeader className="bg-background">
-        <CardTitle className="text-xl ">
-          <Package className="inline-block mr-2" /> {item.name}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col sm:flex-row items-center p-6">
-        <img
-          src={item.image}
-          alt={item.name}
-          className="w-40 h-40 object-cover mb-4 sm:mb-0 sm:mr-6 rounded-lg shadow-md"
-        />
-        <div className="flex-grow space-y-2">
-          <p className="text-gray-600">Quantity: {item.quantity}</p>
-          <p className="text-gray-600">Price: ${item.price.toFixed(2)}</p>
-          <p className="text-gray-600">Shipping Fee: $20.00</p>
-          <Button
-            onClick={() => onApplyDiscount(item.product_id)}
-            className="mt-2 bg-green-500 hover:bg-green-600 transition-colors duration-300"
-          >
-            <Tag className="mr-2" /> Apply Discount
-          </Button>
-          {appliedDiscount && (
-            <p className="text-green-600 mt-2 font-semibold">
-              Applied Discount: {appliedDiscount.code}
-            </p>
-          )}
-          <p className="font-bold text-lg mt-2 text-blue-600">
-            Total: ${total.toFixed(2)}
-          </p>
-        </div>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
-
-interface OrderSummaryProps {
-  total: number;
-  shippingAddresses: string[];
-  paymentMethods: string[];
-  onShippingAddressChange: (address: string) => void;
-  onPaymentMethodChange: (method: string) => void;
-  onCheckout: () => void;
-}
-
-const OrderSummary: React.FC<OrderSummaryProps> = ({
-  total,
-  shippingAddresses,
-  paymentMethods,
-  onShippingAddressChange,
-  onPaymentMethodChange,
-  onCheckout,
-}) => (
-  <div className="lg:w-1/3">
-    <Card className="sticky top-4 bg-background_secondary shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-2xl text-blue-600">Order Summary</CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Truck className="inline-block mr-2" /> Shipping Address
-          </label>
-          <Select onValueChange={onShippingAddressChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select shipping address" />
-            </SelectTrigger>
-            <SelectContent>
-              {shippingAddresses.map((address) => (
-                <SelectItem key={address} value={address}>
-                  {address}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <CreditCard className="inline-block mr-2" /> Payment Method
-          </label>
-          <Select onValueChange={onPaymentMethodChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select payment method" />
-            </SelectTrigger>
-            <SelectContent>
-              {paymentMethods.map((method) => (
-                <SelectItem key={method} value={method}>
-                  {method}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <p className="text-2xl font-bold text-blue-600">
-          Total: ${total.toFixed(2)}
-        </p>
-        <Button
-          onClick={onCheckout}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300 text-lg py-3"
-        >
-          Proceed to Payment <ChevronRight className="ml-2" />
-        </Button>
-      </CardContent>
-    </Card>
-  </div>
-);
-
 interface DiscountDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  discounts: Discount[];
-  onSelectDiscount: (discount: Discount) => void;
+  item: CheckoutItem;
+  index: number;
+  handleUseDiscount: (index: number) => Promise<void>;
+  applyDiscount: (index: number, discount: Discount) => void;
 }
 
 const DiscountDialog: React.FC<DiscountDialogProps> = ({
-  open,
-  onOpenChange,
-  discounts,
-  onSelectDiscount,
-}) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="sm:max-w-[425px]">
-      <DialogHeader>
-        <DialogTitle className="text-2xl text-blue-600">
-          Available Discounts
-        </DialogTitle>
-      </DialogHeader>
-      <div className="grid gap-4 mt-4">
-        {discounts.map((discount) => (
-          <motion.div
-            key={discount._id}
-            className="p-4 border rounded-lg hover:shadow-md transition-shadow duration-300 bg-white"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <p className="font-bold text-lg text-blue-600">{discount.code}</p>
-            <p className="text-gray-600">Type: {discount.type}</p>
-            <p className="text-gray-600">
-              Value:{" "}
-              {typeof discount.value === "object"
-                ? `Buy ${discount.value.buyQuantity} Get ${discount.value.getFreeQuantity} Free`
-                : `${discount.value}${
-                    discount.type === "percentage" ||
-                    discount.type === "flash-sale"
-                      ? "%"
-                      : "$"
-                  }`}
-            </p>
-            <p className="text-gray-600">
-              Valid until: {new Date(discount.endDate).toLocaleDateString()}
-            </p>
-            <p className="text-gray-600">Uses left: {discount.maxUses}</p>
-            <Button
-              onClick={() => onSelectDiscount(discount)}
-              className="mt-2 bg-green-500 hover:bg-green-600 transition-colors duration-300"
-            >
-              Select Discount
-            </Button>
-          </motion.div>
-        ))}
-      </div>
-    </DialogContent>
-  </Dialog>
-);
+  item,
+  index,
+  handleUseDiscount,
+  applyDiscount,
+}) => {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          className="mt-2"
+          onClick={() => handleUseDiscount(index)}
+        >
+          <Tag className="w-4 h-4 mr-2" />
+          Use Discount
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold">
+            Available Discounts
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          {item.discounts.map((discount) => (
+            <div key={discount._id} className="bg-gray-100 p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-lg font-semibold">{discount.code}</span>
+                <Button
+                  onClick={() => applyDiscount(index, discount)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Apply
+                </Button>
+              </div>
+              <div className="flex items-center text-sm text-gray-600 mb-1">
+                <Percent className="w-4 h-4 mr-2" />
+                <span>{discount.value}% off</span>
+              </div>
+              <div className="flex items-center text-sm text-gray-600 mb-1">
+                <DollarSign className="w-4 h-4 mr-2" />
+                <span>
+                  Min. Purchase: ${discount.minimum_purchase.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center text-sm text-gray-600 mb-1">
+                <Clock className="w-4 h-4 mr-2" />
+                <span>Type: {discount.type}</span>
+              </div>
+              <div className="mt-2">
+                <div className="flex justify-between text-sm text-gray-600 mb-1">
+                  <span>Usage</span>
+                  <span>
+                    {discount.current_uses} / {discount.max_uses}
+                  </span>
+                </div>
+                <Progress
+                  value={(discount.current_uses / discount.max_uses) * 100}
+                  className="h-2"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export default CheckoutPage;
+// just a comment

@@ -11,19 +11,31 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Plus, Minus, ShoppingCart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { get, del, put } from "@/utils/authUtils";
+import { get, del, put, post } from "@/utils/authUtils";
+
+interface Variant {
+  sku: string;
+  stock: number;
+  price: number;
+}
 
 interface CartItem {
   product_id: string;
-  name: string;
-  image: string;
+  selected_sku: string;
   quantity: number;
-  stock: number;
-  price: number;
-  selected_attributes_value?: string;
+  image: string;
+  name: string;
+  variants: Variant[];
 }
 
 interface CartData {
@@ -58,10 +70,22 @@ const CartPage: React.FC = () => {
     newQuantity: number
   ) => {
     try {
-      await put(`/cart`, { product_id: productId, quantity: newQuantity });
+      await put(`/cart/quantity`, {
+        product_id: productId,
+        quantity: newQuantity,
+      });
       fetchCartData();
     } catch (error) {
       console.error("Error updating quantity:", error);
+    }
+  };
+
+  const handleSkuChange = async (productId: string, newSku: string) => {
+    try {
+      await put(`/cart/sku`, { product_id: productId, sku: newSku });
+      fetchCartData();
+    } catch (error) {
+      console.error("Error updating SKU:", error);
     }
   };
 
@@ -82,7 +106,14 @@ const CartPage: React.FC = () => {
     );
   };
 
-  const calculateTotal = (item: CartItem) => item.price * item.quantity;
+  const getSelectedVariant = (item: CartItem) => {
+    return item.variants.find((variant) => variant.sku === item.selected_sku);
+  };
+
+  const calculateTotal = (item: CartItem) => {
+    const selectedVariant = getSelectedVariant(item);
+    return (selectedVariant?.price || 0) * item.quantity;
+  };
 
   const calculateEndTotal = () =>
     cartData?.items.reduce((total, item) => total + calculateTotal(item), 0) ||
@@ -93,22 +124,17 @@ const CartPage: React.FC = () => {
       .filter((item) => selectedItems.includes(item.product_id))
       .reduce((total, item) => total + calculateTotal(item), 0) || 0;
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (selectedItems.length === 0) {
       alert("Please select at least one item to checkout.");
       return;
     }
 
-    const checkoutItems = cartData?.items.filter((item) =>
-      selectedItems.includes(item.product_id)
+    const session_id = await post<{ session_id: any }>(
+      "/session",
+      selectedItems
     );
-
-    const checkoutData = {
-      items: checkoutItems,
-    };
-
-    localStorage.setItem("checkoutData", JSON.stringify(checkoutData));
-    navigate("/checkout");
+    navigate(`/checkout/${session_id}`);
   };
 
   return (
@@ -163,6 +189,7 @@ const CartPage: React.FC = () => {
                       <TableHead className="w-[50px]">Select</TableHead>
                       <TableHead className="w-[50px]">No.</TableHead>
                       <TableHead>Product</TableHead>
+                      <TableHead>Variant</TableHead>
                       <TableHead>Price</TableHead>
                       <TableHead>Quantity</TableHead>
                       <TableHead>Stock</TableHead>
@@ -170,88 +197,112 @@ const CartPage: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cartData?.items.map((item, index) => (
-                      <TableRow
-                        key={item.product_id}
-                        className="hover:bg-background transition-colors duration-200"
-                      >
-                        <TableCell>
-                          <Checkbox
-                            className="bg-white"
-                            checked={selectedItems.includes(item.product_id)}
-                            onCheckedChange={() =>
-                              toggleItemSelection(item.product_id)
-                            }
-                          />
-                        </TableCell>
-                        <TableCell>{index + 1}</TableCell>
-                        <TableCell className="flex items-center space-x-2">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-12 h-12 object-cover rounded"
-                          />
-                          <div>
-                            <p className="font-medium">{item.name}</p>
-                            {item.selected_attributes_value && (
-                              <p className="text-sm text-gray-500">
-                                {item.selected_attributes_value}
-                              </p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>${item.price.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleQuantityChange(
-                                  item.product_id,
-                                  item.quantity - 1
-                                )
+                    {cartData?.items.map((item, index) => {
+                      const selectedVariant = getSelectedVariant(item);
+                      return (
+                        <TableRow
+                          key={item.product_id}
+                          className="hover:bg-background transition-colors duration-200"
+                        >
+                          <TableCell>
+                            <Checkbox
+                              className="bg-white"
+                              checked={selectedItems.includes(item.product_id)}
+                              onCheckedChange={() =>
+                                toggleItemSelection(item.product_id)
                               }
-                              disabled={item.quantity <= 1}
-                            >
-                              <Minus size={16} />
-                            </Button>
-                            <Input
-                              type="number"
-                              min="1"
-                              max={item.stock}
-                              value={item.quantity}
-                              onChange={(e) =>
-                                handleQuantityChange(
-                                  item.product_id,
-                                  parseInt(e.target.value)
-                                )
-                              }
-                              className="w-16 text-center"
                             />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() =>
-                                handleQuantityChange(
-                                  item.product_id,
-                                  item.quantity + 1
-                                )
+                          </TableCell>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell className="flex items-center space-x-2">
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                            <div>
+                              <p className="font-medium">{item.name}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                              value={item.selected_sku}
+                              onValueChange={(value) =>
+                                handleSkuChange(item.product_id, value)
                               }
-                              disabled={item.quantity >= item.stock}
                             >
-                              <Plus size={16} />
-                            </Button>
-                          </div>
-                        </TableCell>
-                        <TableCell>{item.stock}</TableCell>
-                        <TableCell>
-                          ${calculateTotal(item).toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select variant" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {item.variants.map((variant) => (
+                                  <SelectItem
+                                    key={variant.sku}
+                                    value={variant.sku}
+                                  >
+                                    {variant.sku}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            ${selectedVariant?.price.toFixed(2)}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    item.product_id,
+                                    item.quantity - 1
+                                  )
+                                }
+                                disabled={item.quantity <= 1}
+                              >
+                                <Minus size={16} />
+                              </Button>
+                              <Input
+                                type="number"
+                                min="1"
+                                max={selectedVariant?.stock}
+                                value={item.quantity}
+                                onChange={(e) =>
+                                  handleQuantityChange(
+                                    item.product_id,
+                                    parseInt(e.target.value)
+                                  )
+                                }
+                                className="w-16 text-center"
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    item.product_id,
+                                    item.quantity + 1
+                                  )
+                                }
+                                disabled={
+                                  item.quantity >= (selectedVariant?.stock || 0)
+                                }
+                              >
+                                <Plus size={16} />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>{selectedVariant?.stock}</TableCell>
+                          <TableCell>
+                            ${calculateTotal(item).toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                     <TableRow>
-                      <TableCell colSpan={6} className="text-right font-bold">
+                      <TableCell colSpan={7} className="text-right font-bold">
                         End Total:
                       </TableCell>
                       <TableCell className="font-bold">

@@ -100,6 +100,7 @@ const SearchPage: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    ("");
     window.scrollTo(0, 0);
   };
 

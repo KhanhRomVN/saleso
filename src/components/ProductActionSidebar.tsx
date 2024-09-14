@@ -8,55 +8,31 @@ import { getPublic, post } from "@/utils/authUtils";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { ProductActionSidebarContext } from "@/context/ProductActionSidebarContext";
+import { toast } from "react-toastify";
 
-interface ProductAttribute {
-  attributes_value: string;
-  attributes_quantity: number;
-  attributes_price: number;
-}
-
-interface CategoryInfo {
-  category_id: string;
-  category_name: string;
-}
-
-interface DetailInfo {
-  details_name: string;
-  details_info: string;
+interface ProductVariant {
+  sku: string;
+  stock: number;
+  price: number;
 }
 
 interface Product {
   _id: string;
   name: string;
-  description: string;
-  countryOfOrigin: string;
-  brand: string;
-  details: DetailInfo[];
-  categories: CategoryInfo[];
-  tags: string[];
   images: string[];
-  price?: number;
-  stock?: number;
-  attributes_name?: string;
-  attributes?: ProductAttribute[];
-  rating: number;
-  units_sold: number;
+  address: string;
+  origin: string;
+  variants: ProductVariant[];
   seller_id: string;
 }
 
-// for action: add-to-cart
 interface CartData {
   product_id: string;
-  selected_attributes_value?: string;
+  selected_sku: string;
   quantity: number;
 }
 
-// for action: buy-now
-interface checkoutSessionData {
-  product_id: string;
-  selected_attributes_value?: string;
-  quantity: number;
-}
+type CheckoutSessionData = CartData;
 
 const ProductActionSidebar: React.FC = () => {
   const { isOpen, productId, action, closeProductActionSidebar } = useContext(
@@ -67,24 +43,24 @@ const ProductActionSidebar: React.FC = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAttribute, setSelectedAttribute] = useState<string | null>(
-    null
-  );
+  const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // fetch product data
   useEffect(() => {
     const fetchProduct = async () => {
       if (!productId) return;
       setLoading(true);
       setError(null);
       try {
-        const data = await getPublic<Product>(`/product/${productId}`);
+        const data = await getPublic<Product>(
+          `/product/by-product/${productId}`
+        );
+
         setProduct(data);
         setQuantity(1);
-        if (data.attributes && data.attributes.length > 0) {
-          setSelectedAttribute(data.attributes[0].attributes_value);
+        if (data.variants && data.variants.length > 0) {
+          setSelectedSku(data.variants[0].sku);
         }
       } catch (err) {
         setError("Failed to fetch product data: " + err);
@@ -96,22 +72,15 @@ const ProductActionSidebar: React.FC = () => {
     fetchProduct();
   }, [productId]);
 
-  const getStock = () => {
-    if (!product) return null;
-    if (product.stock !== undefined) return product.stock;
-    if (product.attributes && selectedAttribute) {
-      const attribute = product.attributes.find(
-        (a) => a.attributes_value === selectedAttribute
-      );
-      return attribute ? attribute.attributes_quantity : null;
-    }
-    return null;
+  const getSelectedVariant = () => {
+    if (!product || !selectedSku) return null;
+    return product.variants.find((variant) => variant.sku === selectedSku);
   };
 
   const handleQuantityChange = (value: number) => {
-    const stock = getStock();
-    if (stock !== null) {
-      setQuantity(Math.min(Math.max(1, value), stock));
+    const selectedVariant = getSelectedVariant();
+    if (selectedVariant) {
+      setQuantity(Math.min(Math.max(1, value), selectedVariant.stock));
     }
   };
 
@@ -132,45 +101,48 @@ const ProductActionSidebar: React.FC = () => {
     }
   };
 
-  // for action: add-to-cart
   const handleAddToCart = async () => {
-    if (!product) return;
+    if (!product || !selectedSku) return;
 
     const cartData: CartData = {
       product_id: product._id,
+      selected_sku: selectedSku,
       quantity: quantity,
     };
-
-    if (product.attributes && selectedAttribute) {
-      cartData.selected_attributes_value = selectedAttribute;
-    }
 
     try {
       const response = await post<{ message: string }>("/cart", cartData);
       console.log("Product added to cart:", response.message);
+      toast.success("Product added to cart successfully");
+      setTimeout(closeProductActionSidebar, 1000);
     } catch (error) {
       console.error("Error adding product to cart:", error);
+      toast.error("Failed to add product to cart");
     }
   };
 
-  // for action: buy-now
-  const handleCreateSessionCheckout = async () => {
-    if (!product) return;
+  const handleBuyNow = async () => {
+    if (!product || !selectedSku) return;
 
-    const checkoutSessionData: checkoutSessionData = {
+    const checkoutSessionData: CheckoutSessionData = {
       product_id: product._id,
+      selected_sku: selectedSku,
       quantity: quantity,
     };
 
-    if (product.attributes && selectedAttribute) {
-      checkoutSessionData.selected_attributes_value = selectedAttribute;
-    }
-
     try {
-      await post<{ message: string }>("/sesion/checkout", checkoutSessionData);
-      navigate("/checkout");
+      const session_id = await post<{ message: string }>(
+        "/session",
+        checkoutSessionData
+      );
+      toast.success("Checkout session created successfully");
+      setTimeout(() => {
+        closeProductActionSidebar();
+        navigate(`/checkout/${session_id}`);
+      }, 1000);
     } catch (error) {
-      console.error("Error adding product to cart:", error);
+      console.error("Error creating checkout session:", error);
+      toast.error("Failed to create checkout session");
     }
   };
 
@@ -200,11 +172,9 @@ const ProductActionSidebar: React.FC = () => {
                 <X size={24} />
               </Button>
 
-              {action === "add-to-cart" ? (
-                <h2 className="text-xl font-bold mb-4">Add to cart</h2>
-              ) : (
-                <h2 className="text-xl font-bold mb-4">Buy now</h2>
-              )}
+              <h2 className="text-xl font-bold mb-4">
+                {action === "add-to-cart" ? "Add to cart" : "Buy now"}
+              </h2>
 
               {loading && <p>Loading...</p>}
               {error && <p className="text-red-500">{error}</p>}
@@ -249,71 +219,28 @@ const ProductActionSidebar: React.FC = () => {
                     </Button>
                   </div>
                   <h3 className="text-lg font-semibold">{product.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{product.brand}</p>
-                  <p className="text-sm mb-2">
-                    Origin: {product.countryOfOrigin}
-                  </p>
-                  <div className="flex flex-wrap gap-2 mb-2 items-center">
-                    <p>Categories:</p>
-                    {product.categories.map((category) => (
-                      <Button
-                        key={category.category_id}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        {category.category_name}
-                      </Button>
-                    ))}
-                  </div>
-                  {product.details && product.details.length > 0 && (
-                    <div className="mb-2">
-                      <h4 className="text-sm font-medium">Product Details:</h4>
-                      {product.details.map((detail, index) => (
-                        <p key={index} className="text-sm">
-                          <span className="font-medium">
-                            {detail.details_name}:
-                          </span>{" "}
-                          {detail.details_info}
-                        </p>
+                  <p className="text-sm mb-2">Address: {product.address}</p>
+                  <p className="text-sm mb-2">Origin: {product.origin}</p>
+
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium mb-2">Variants</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {product.variants.map((variant) => (
+                        <Button
+                          key={variant.sku}
+                          variant={
+                            selectedSku === variant.sku ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => setSelectedSku(variant.sku)}
+                          className="w-full text-xs"
+                        >
+                          {variant.sku}
+                          <br />${variant.price} - {variant.stock} in stock
+                        </Button>
                       ))}
                     </div>
-                  )}
-                  {product.attributes ? (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium mb-2">
-                        {product.attributes_name}
-                      </h4>
-                      <div className="grid grid-cols-3 gap-2">
-                        {product.attributes.map((attr) => (
-                          <Button
-                            key={attr.attributes_value}
-                            variant={
-                              selectedAttribute === attr.attributes_value
-                                ? "default"
-                                : "outline"
-                            }
-                            size="sm"
-                            onClick={() =>
-                              setSelectedAttribute(attr.attributes_value)
-                            }
-                            className="w-full text-xs"
-                          >
-                            {attr.attributes_value}
-                            <br />${attr.attributes_price} -
-                            {attr.attributes_quantity} in stock
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-lg font-bold mb-2">
-                        Price: ${product.price}
-                      </p>
-                      <p className="text-sm mb-2">Stock: {product.stock}</p>
-                    </>
-                  )}
+                  </div>
 
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -345,21 +272,14 @@ const ProductActionSidebar: React.FC = () => {
                     </div>
                   </div>
 
-                  {action === "add-to-cart" ? (
-                    <Button
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                      onClick={handleAddToCart}
-                    >
-                      Add to Cart
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                      onClick={handleCreateSessionCheckout}
-                    >
-                      Buy now
-                    </Button>
-                  )}
+                  <Button
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    onClick={
+                      action === "add-to-cart" ? handleAddToCart : handleBuyNow
+                    }
+                  >
+                    {action === "add-to-cart" ? "Add to Cart" : "Buy Now"}
+                  </Button>
                 </motion.div>
               )}
             </div>
