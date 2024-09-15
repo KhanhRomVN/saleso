@@ -10,18 +10,18 @@ import {
 
 const UtilityHeader: React.FC = () => {
   return (
-    <div className="bg-primary text-primary-foreground h-4 px-2 w-full">
+    <div className="bg-primary text-primary-foreground h-4 sm:h-8 px-2 w-full">
       <div className="container mx-auto flex justify-between items-center h-full">
-        <div className="text-xs">Free Shipping On All Orders Over $250</div>
-        <div className="flex items-center space-x-4">
+        <div className="text-xs hidden sm:block">Free Shipping On All Orders Over $250</div>
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-primary-foreground h-4 px-2 py-0 text-xs"
+                className="text-primary-foreground h-4 px-1 sm:px-2 py-0 text-[10px] sm:text-xs"
               >
-                Eng <ChevronDown className="ml-1 h-3 w-3" />
+                Eng <ChevronDown className="ml-1 h-2 w-2 sm:h-3 sm:w-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -33,16 +33,16 @@ const UtilityHeader: React.FC = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="text-primary-foreground h-4 px-2 py-0 text-xs"
+            className="text-primary-foreground h-4 px-1 sm:px-2 py-0 text-[10px] sm:text-xs"
           >
             FAQs
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="text-primary-foreground h-4 px-2 py-0 text-xs"
+            className="text-primary-foreground h-4 px-1 sm:px-2 py-0 text-[10px] sm:text-xs"
           >
-            Need Help
+            Help
           </Button>
         </div>
       </div>

@@ -131,3 +131,14 @@ export const putPublic = <T = any,>(url: string, body?: any): Promise<T> =>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const delPublic = <T = any,>(url: string): Promise<T> =>
   handlePublicRequest("delete", url).then((response) => response.data);
+
+export const authUtils = {
+  get,
+  post,
+  put,
+  del,
+  getPublic,
+  postPublic,
+  putPublic,
+  delPublic
+};

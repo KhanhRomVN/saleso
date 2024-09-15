@@ -10,6 +10,7 @@ import SettingPage from "./pages/SettingPage";
 import SearchPage from "./pages/SearchPage";
 import CategoriesSearch from "./pages/CategoriesSearch";
 import DefaultLayout from "@/layout/defaultLayout";
+import PaymentPage from "./pages/PaymentPage";
 
 const publicRoutes = [
   {
@@ -89,6 +90,14 @@ const publicRoutes = [
     element: (
       <DefaultLayout>
         <CategoriesSearch />
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: "/payment/:session_id",
+    element: (
+      <DefaultLayout>
+        <PaymentPage />
       </DefaultLayout>
     ),
   },

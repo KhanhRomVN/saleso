@@ -83,13 +83,13 @@ const LoginPage: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="flex justify-center items-center flex-col w-screen h-screen bg-background"
+      className="flex justify-center items-center flex-col w-screen min-h-screen bg-background p-4"
     >
       <motion.div
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2, type: "spring", stiffness: 120 }}
-        className="bg-background_secondary rounded-lg p-4 w-full max-w-md mb-5 shadow-lg"
+        className="bg-background_secondary rounded-lg p-4 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl mb-5 shadow-lg"
       >
         <div className="flex flex-col gap-3 mb-5">
           <motion.img
@@ -98,10 +98,10 @@ const LoginPage: React.FC = () => {
             transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
             src="https://i.ibb.co/CMSJMK3/Brandmark-make-your-logo-in-minutes-removebg-preview.png"
             alt="logo"
-            className="h-10 mx-auto object-contain"
+            className="h-8 sm:h-10 mx-auto object-contain"
           />
-          <h2 className="text-2xl text-center font-bold">Welcome to Saleso!</h2>
-          <p className="text-sm text-center text-gray-600">
+          <h2 className="text-xl sm:text-2xl text-center font-bold">Welcome to Saleso!</h2>
+          <p className="text-xs sm:text-sm text-center text-gray-600">
             Please enter your email and password to login
           </p>
         </div>

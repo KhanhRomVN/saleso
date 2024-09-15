@@ -91,21 +91,21 @@ const RegisterPage: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="flex justify-center items-center min-h-screen bg-background"
+      className="flex justify-center items-center min-h-screen bg-background p-4 sm:p-6 md:p-8"
     >
       <Card className="w-full max-w-md shadow-lg bg-background_secondary rounded-lg">
         <CardHeader className="space-y-1 text-center">
           <motion.img
             src="https://i.ibb.co/CMSJMK3/Brandmark-make-your-logo-in-minutes-removebg-preview.png"
             alt="logo"
-            className="h-12 mx-auto"
+            className="h-8 sm:h-10 md:h-12 mx-auto"
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 300 }}
           />
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
             Create an account
           </h2>
-          <p className="text-sm text-gray-600">Experience many new things</p>
+          <p className="text-xs sm:text-sm text-gray-600">Experience many new things</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Input
@@ -146,16 +146,16 @@ const RegisterPage: React.FC = () => {
             )}
           </AnimatePresence>
           <Button
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300 text-sm sm:text-base"
             onClick={showOTPInput ? handleOTPSubmit : handleEmailSubmit}
           >
             {showOTPInput ? "Verify OTP" : "Register"}
           </Button>
         </CardContent>
         <div className="text-center pb-4">
-          <p className="text-sm text-gray-600">Already have an account?</p>
+          <p className="text-xs sm:text-sm text-gray-600">Already have an account?</p>
           <motion.p
-            className="text-sm text-blue-600 cursor-pointer font-semibold"
+            className="text-xs sm:text-sm text-blue-600 cursor-pointer font-semibold"
             onClick={() => navigate("/login")}
             whileHover={{ scale: 1.05 }}
           >

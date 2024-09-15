@@ -16,7 +16,7 @@ const categoryBody = {
 
 function HomePage() {
   return (
-    <div>
+    <div className="space-y-6 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col gap-4">
         <Slider
           api="/gallery/filter"
@@ -24,11 +24,13 @@ function HomePage() {
           itemPerSlide={1}
           noActionArrow={true}
         />
-        <p className="pl-5 text-xl">Top Categories</p>
+        <p className="text-xl font-semibold">Top Categories</p>
         <Slider
           api="/gallery/filter"
           body={categoryBody}
-          itemPerSlide={4}
+          itemPerSlide={2}
+          itemPerSlideTablet={3}
+          itemPerSlideDesktop={4}
           noActionArrow={true}
         />
       </div>
@@ -40,7 +42,7 @@ function HomePage() {
           </div>
         }
         api={FlashsaleAPI}
-        grid="1x4"
+        grid="2x4"
       />
       <ProductGrid
         title={
@@ -50,7 +52,7 @@ function HomePage() {
           </div>
         }
         api={TopSellingAPI}
-        grid="1x4"
+        grid="2x4"
       />
     </div>
   );

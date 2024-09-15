@@ -15,15 +15,16 @@ const OrderSuccessPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen p-4">
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
       >
-        <Card className="w-full max-w-md bg-background_secondary shadow-lg">
+        <Card className="bg-background_secondary shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center text-green-600">
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center text-green-600">
               Đặt hàng thành công!
             </CardTitle>
           </CardHeader>
@@ -37,22 +38,22 @@ const OrderSuccessPage: React.FC = () => {
                 <Check className="h-8 w-8 text-green-600" />
               </div>
             </motion.div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 text-sm sm:text-base">
               Cảm ơn bạn đã đặt hàng. Chúng tôi đã nhận được đơn hàng của bạn và
               sẽ xử lý nó trong thời gian sớm nhất.
             </p>
-            <p className="font-semibold">Mã đơn hàng: #12345</p>
+            <p className="font-semibold text-sm sm:text-base">Mã đơn hàng: #12345</p>
           </CardContent>
-          <CardFooter className="flex justify-center space-x-4">
+          <CardFooter className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
             <Button
               variant="outline"
-              className="hover:bg-blue-100 transition-colors duration-300"
+              className="w-full sm:w-auto hover:bg-blue-100 transition-colors duration-300"
               onClick={() => navigate("/order")}
             >
               Xem chi tiết đơn hàng
             </Button>
             <Button
-              className="bg-green-500 hover:bg-green-600 transition-colors duration-300"
+              className="w-full sm:w-auto bg-green-500 hover:bg-green-600 transition-colors duration-300"
               onClick={() => navigate("/")}
             >
               Tiếp tục mua sắm

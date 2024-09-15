@@ -1,36 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import * as authUtils from "@/utils/authUtils";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ShoppingCart,
-  Truck,
-  CreditCard,
-  Tag,
-  Percent,
-  DollarSign,
-  Clock,
-} from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ToastContainer, toast } from 'react-toastify';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select"
+import {Button} from "@/components/ui/button"
+import { ShoppingCart, Truck, CreditCard, Tag, Percent, DollarSign, Clock } from 'lucide-react';
+import { authUtils } from '@/utils/authUtils';
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Progress } from '@/components/ui/progress';
 
 interface Variant {
   sku: string;
@@ -58,10 +38,11 @@ interface CheckoutItem {
   variants: Variant[];
   discounts: Discount[];
   appliedDiscount: Discount | null;
+  applied_discount: string | null;
 }
 
 interface SessionResponse {
-  data: { product_id: string; selected_sku: string; quantity: number };
+  data: { product_id: string; selected_sku: string; quantity: number } | string[];
 }
 
 interface CartResponse {
@@ -77,11 +58,13 @@ interface ProductResponse {
 
 const CheckoutPage: React.FC = () => {
   const { session_id } = useParams<{ session_id: string }>();
+  const navigate = useNavigate();
   const [checkoutData, setCheckoutData] = useState<CheckoutItem[]>([]);
   const [shippingAddress, setShippingAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("prepaid");
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   useEffect(() => {
     const fetchCheckoutData = async () => {
@@ -115,6 +98,7 @@ const CheckoutPage: React.FC = () => {
                   )?.price || 0,
                 discounts: [],
                 appliedDiscount: null,
+                applied_discount: null,
               };
             })
           );
@@ -122,15 +106,17 @@ const CheckoutPage: React.FC = () => {
           const productResponse = await authUtils.get<ProductResponse>(
             `/product/by-product/${response.data.product_id}`
           );
+          const selectedSku = 'selected_sku' in response.data ? response.data.selected_sku : '';
           processedData.push({
             ...response.data,
             ...productResponse,
             price:
               productResponse.variants.find(
-                (v) => v.sku === response.data.selected_sku
+                (v) => v.sku === selectedSku
               )?.price || 0,
             discounts: [],
             appliedDiscount: null,
+            applied_discount: null,
           });
         }
 
@@ -138,23 +124,24 @@ const CheckoutPage: React.FC = () => {
         calculateTotal(processedData);
       } catch (error) {
         console.error("Error fetching checkout data:", error);
-        toast.error("Failed to load checkout data. Please try again.");
+        toast.error("Failed to load checkout data. Redirecting to home page...");
+        navigate("/");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCheckoutData();
-  }, [session_id]);
+  }, [session_id, navigate]);
 
-  const calculateTotal = (data: CheckoutItem[]) => {
+  const calculateTotal = useCallback((data: CheckoutItem[]) => {
     const subtotal = data.reduce(
       (acc, item) => acc + item.price * item.quantity,
       0
     );
     const shippingFee = 10; // Default shipping fee
     setTotalAmount(subtotal + shippingFee);
-  };
+  }, []);
 
   const handleUseDiscount = async (index: number) => {
     try {
@@ -189,6 +176,7 @@ const CheckoutPage: React.FC = () => {
 
       item.price = discountedPrice;
       item.appliedDiscount = discount;
+      item.applied_discount = discount._id;
       setCheckoutData(updatedCheckoutData);
       calculateTotal(updatedCheckoutData);
       toast.success(`Discount ${discount.code} applied successfully!`);
@@ -198,6 +186,11 @@ const CheckoutPage: React.FC = () => {
   };
 
   const handleCheckout = async () => {
+    if (!shippingAddress.trim()) {
+      toast.error("Please enter a shipping address.");
+      return;
+    }
+
     try {
       const orderItems = checkoutData.map((item) => ({
         product_id: item.product_id,
@@ -206,25 +199,37 @@ const CheckoutPage: React.FC = () => {
         total_amount: item.price * item.quantity,
         shipping_fee: 10,
         shipping_address: shippingAddress,
+        applied_discount: item.applied_discount,
       }));
 
       const orderData = {
         orderItems,
         payment_method: paymentMethod,
         payment_status: paymentMethod === "prepaid" ? "unpaid" : "paid",
+        shipping_address: shippingAddress,
       };
 
-      await authUtils.post("/order", orderData);
+
 
       toast.success("Order placed successfully!");
-      // Redirect to order confirmation page or clear cart
+      
+      if (paymentMethod === "prepaid") {
+        await authUtils.post("/order", orderData);
+        await authUtils.get(`/session/clean/${session_id}`);
+        navigate("/order-success");
+      } else {
+        const session_id = await authUtils.post("/session", orderData);
+        navigate(`/payment/${session_id}`);
+      }
     } catch (error) {
       console.error("Error placing order:", error);
       toast.error("Failed to place order. Please try again.");
     }
   };
 
-  if (isLoading)
+  const memoizedCheckoutData = useMemo(() => checkoutData, [checkoutData]);
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <motion.div
@@ -235,6 +240,7 @@ const CheckoutPage: React.FC = () => {
         </motion.div>
       </div>
     );
+  }
 
   return (
     <motion.div
@@ -245,8 +251,8 @@ const CheckoutPage: React.FC = () => {
     >
       <ToastContainer position="top-right" autoClose={3000} />
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="w-full lg:w-2/3">
+      <div className={`flex ${isDesktop ? 'flex-row' : 'flex-col'} gap-8`}>
+        <div className={`w-full ${isDesktop ? 'lg:w-2/3' : ''}`}>
           <Card className="mb-8 bg-background_secondary">
             <CardHeader>
               <CardTitle className="text-2xl font-bold flex items-center">
@@ -256,120 +262,159 @@ const CheckoutPage: React.FC = () => {
             </CardHeader>
             <CardContent>
               <AnimatePresence>
-                {checkoutData.map((item, index) => (
-                  <motion.div
+                {memoizedCheckoutData.map((item, index) => (
+                  <CheckoutItem
                     key={item.product_id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="mb-4 p-4 bg-background rounded-lg shadow"
-                  >
-                    <div className="flex items-start">
-                      <img
-                        src={item.images[0]}
-                        alt={item.name}
-                        className="w-24 h-24 object-cover rounded-md mr-4"
-                      />
-                      <div className="flex-grow">
-                        <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <p className="text-sm text-gray-600">
-                          Quantity: {item.quantity}
-                        </p>
-                        <p className="text-sm font-medium">
-                          Price: ${item.price.toFixed(2)}
-                        </p>
-                        <DiscountDialog
-                          item={item}
-                          index={index}
-                          handleUseDiscount={handleUseDiscount}
-                          applyDiscount={applyDiscount}
-                        />
-                        {item.appliedDiscount && (
-                          <div className="flex items-center mt-2 text-green-600">
-                            <Tag className="w-4 h-4 mr-2" />
-                            <span>Applied: {item.appliedDiscount.code}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
+                    item={item}
+                    index={index}
+                    handleUseDiscount={handleUseDiscount}
+                    applyDiscount={applyDiscount}
+                  />
                 ))}
               </AnimatePresence>
             </CardContent>
           </Card>
         </div>
 
-        <div className="w-full lg:w-1/3">
-          <Card className="bg-background_secondary">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">
-                Order Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2 flex items-center">
-                  <Truck className="w-5 h-5 mr-2" />
-                  Shipping Information
-                </h2>
-                <Input
-                  type="text"
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  placeholder="Enter shipping address"
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-semibold mb-2 flex items-center">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Payment Method
-                </h2>
-                <Select
-                  value={paymentMethod}
-                  onValueChange={(value: string) => setPaymentMethod(value)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="prepaid">Prepaid</SelectItem>
-                    <SelectItem value="postpaid">Postpaid</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="bg-background p-4 rounded-lg">
-                <h2 className="text-xl font-semibold mb-2">Order Total</h2>
-                <div className="flex justify-between mb-2">
-                  <span>Subtotal:</span>
-                  <span>${totalAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between mb-2">
-                  <span>Shipping Fee:</span>
-                  <span>$10.00</span>
-                </div>
-                <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-gray-300">
-                  <span>Total:</span>
-                  <span>${(totalAmount + 10).toFixed(2)}</span>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleCheckout}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Place Order
-              </Button>
-            </CardContent>
-          </Card>
+        <div className={`w-full ${isDesktop ? 'lg:w-1/3' : ''}`}>
+          <OrderSummary
+            shippingAddress={shippingAddress}
+            setShippingAddress={setShippingAddress}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
+            totalAmount={totalAmount}
+            handleCheckout={handleCheckout}
+          />
         </div>
       </div>
     </motion.div>
   );
 };
+
+const CheckoutItem: React.FC<{
+  item: CheckoutItem;
+  index: number;
+  handleUseDiscount: (index: number) => Promise<void>;
+  applyDiscount: (index: number, discount: Discount) => void;
+}> = React.memo(({ item, index, handleUseDiscount, applyDiscount }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.3 }}
+    className="mb-4 p-4 bg-background rounded-lg shadow"
+  >
+    <div className="flex items-start">
+      <img
+        src={item.images[0]}
+        alt={item.name}
+        className="w-24 h-24 object-cover rounded-md mr-4"
+      />
+      <div className="flex-grow">
+        <h3 className="text-lg font-semibold">{item.name}</h3>
+        <p className="text-sm text-gray-600">
+          Quantity: {item.quantity}
+        </p>
+        <p className="text-sm font-medium">
+          Price: ${item.price.toFixed(2)}
+        </p>
+        <DiscountDialog
+          item={item}
+          index={index}
+          handleUseDiscount={handleUseDiscount}
+          applyDiscount={applyDiscount}
+        />
+        {item.appliedDiscount && (
+          <div className="flex items-center mt-2 text-green-600">
+            <Tag className="w-4 h-4 mr-2" />
+            <span>Applied: {item.appliedDiscount.code}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  </motion.div>
+));
+
+const OrderSummary: React.FC<{
+  shippingAddress: string;
+  setShippingAddress: (address: string) => void;
+  paymentMethod: string;
+  setPaymentMethod: (method: string) => void;
+  totalAmount: number;
+  handleCheckout: () => Promise<void>;
+}> = ({
+  shippingAddress,
+  setShippingAddress,
+  paymentMethod,
+  setPaymentMethod,
+  totalAmount,
+  handleCheckout,
+}) => (
+  <Card className="bg-background_secondary">
+    <CardHeader>
+      <CardTitle className="text-2xl font-bold">
+        Order Summary
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-2 flex items-center">
+          <Truck className="w-5 h-5 mr-2" />
+          Shipping Information
+        </h2>
+        <Input
+          type="text"
+          value={shippingAddress}
+          onChange={(e) => setShippingAddress(e.target.value)}
+          placeholder="Enter shipping address"
+          className="w-full"
+        />
+      </div>
+
+      <div>
+        <h2 className="text-xl font-semibold mb-2 flex items-center">
+          <CreditCard className="w-5 h-5 mr-2" />
+          Payment Method
+        </h2>
+        <Select
+          value={paymentMethod}
+          onValueChange={(value: string) => setPaymentMethod(value)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select payment method" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="prepaid">Prepaid</SelectItem>
+            <SelectItem value="postpaid">Postpaid</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="bg-background p-4 rounded-lg">
+        <h2 className="text-xl font-semibold mb-2">Order Total</h2>
+        <div className="flex justify-between mb-2">
+          <span>Subtotal:</span>
+          <span>${totalAmount.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between mb-2">
+          <span>Shipping Fee:</span>
+          <span>$10.00</span>
+        </div>
+        <div className="flex justify-between text-lg font-bold mt-2 pt-2 border-t border-gray-300">
+          <span>Total:</span>
+          <span>${(totalAmount + 10).toFixed(2)}</span>
+        </div>
+      </div>
+
+      <Button
+        onClick={handleCheckout}
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+      >
+        Place Order
+      </Button>
+    </CardContent>
+  </Card>
+);
 
 interface DiscountDialogProps {
   item: CheckoutItem;
@@ -396,8 +441,8 @@ const DiscountDialog: React.FC<DiscountDialogProps> = ({
           Use Discount
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w">
+      <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
             Available Discounts
           </DialogTitle>
@@ -449,4 +494,3 @@ const DiscountDialog: React.FC<DiscountDialogProps> = ({
 };
 
 export default CheckoutPage;
-// just a comment

@@ -18,6 +18,8 @@ interface SliderProps {
   api: string;
   body?: Record<string, unknown>;
   itemPerSlide?: number;
+  itemPerSlideTablet?: number;
+  itemPerSlideDesktop?: number;
   autoPlay?: boolean;
   noActionArrow?: boolean;
   itemWidth?: string;
@@ -27,6 +29,8 @@ const Slider: React.FC<SliderProps> = ({
   api,
   body = {},
   itemPerSlide = 1,
+  itemPerSlideTablet,
+  itemPerSlideDesktop,
   autoPlay = true,
   noActionArrow = true,
   itemWidth = "100%",
@@ -50,14 +54,14 @@ const Slider: React.FC<SliderProps> = ({
   const responsive = {
     desktop: {
       breakpoint: { max: 3000, min: 1024 },
-      items: itemPerSlide,
+      items: itemPerSlideDesktop || itemPerSlide,
     },
     tablet: {
-      breakpoint: { max: 1024, min: 464 },
-      items: Math.max(1, itemPerSlide - 1),
+      breakpoint: { max: 1024, min: 640 },
+      items: itemPerSlideTablet || Math.max(1, itemPerSlide - 1),
     },
     mobile: {
-      breakpoint: { max: 464, min: 0 },
+      breakpoint: { max: 640, min: 0 },
       items: 1,
     },
   };

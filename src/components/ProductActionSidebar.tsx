@@ -157,7 +157,7 @@ const ProductActionSidebar: React.FC = () => {
             exit={{ opacity: 0 }}
           />
           <motion.div
-            className="fixed top-0 right-0 w-2/5 h-screen bg-background shadow-lg z-50 overflow-y-auto"
+            className="fixed top-0 right-0 w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-2/5 h-screen bg-background shadow-lg z-50 overflow-y-auto"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -166,13 +166,13 @@ const ProductActionSidebar: React.FC = () => {
             <div className="p-4">
               <Button
                 variant="ghost"
-                className="float-right"
+                className="absolute top-2 right-2"
                 onClick={closeProductActionSidebar}
               >
                 <X size={24} />
               </Button>
 
-              <h2 className="text-xl font-bold mb-4">
+              <h2 className="text-xl font-bold mb-4 pr-8">
                 {action === "add-to-cart" ? "Add to cart" : "Buy now"}
               </h2>
 
@@ -183,14 +183,15 @@ const ProductActionSidebar: React.FC = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
+                  className="space-y-4"
                 >
-                  <div className="relative mb-4">
+                  <div className="relative">
                     <Dialog>
                       <DialogTrigger asChild>
                         <img
                           src={product.images[currentImageIndex]}
                           alt={product.name}
-                          className="w-full h-48 object-cover cursor-pointer transition-transform duration-300 hover:scale-105"
+                          className="w-full h-48 sm:h-64 object-cover cursor-pointer transition-transform duration-300 hover:scale-105"
                         />
                       </DialogTrigger>
                       <DialogContent className="max-w-3xl">
@@ -218,13 +219,15 @@ const ProductActionSidebar: React.FC = () => {
                       <ChevronRight size={24} />
                     </Button>
                   </div>
-                  <h3 className="text-lg font-semibold">{product.name}</h3>
-                  <p className="text-sm mb-2">Address: {product.address}</p>
-                  <p className="text-sm mb-2">Origin: {product.origin}</p>
+                  <div>
+                    <h3 className="text-lg font-semibold">{product.name}</h3>
+                    <p className="text-sm">Address: {product.address}</p>
+                    <p className="text-sm">Origin: {product.origin}</p>
+                  </div>
 
-                  <div className="mb-4">
+                  <div>
                     <h4 className="text-sm font-medium mb-2">Variants</h4>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {product.variants.map((variant) => (
                         <Button
                           key={variant.sku}
@@ -242,7 +245,7 @@ const ProductActionSidebar: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mb-4">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Quantity
                     </label>

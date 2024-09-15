@@ -19,7 +19,6 @@ import {
   Heart,
   CreditCard,
   ShoppingCart,
-  Tag,
   Globe,
   MapPin,
 } from "lucide-react";
@@ -29,6 +28,7 @@ import { getPublic, post } from "@/utils/authUtils";
 import { ProductActionSidebarContext } from "@/context/ProductActionSidebarContext";
 import { toast } from "react-toastify";
 import ProductActionSidebar from "@/components/ProductActionSidebar";
+import { useInView } from 'react-intersection-observer';
 
 interface Category {
   category_id: string;
@@ -68,6 +68,11 @@ const ProductPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
 
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  });
+
   const fetchData = useCallback(async () => {
     try {
       const productResponse = await getPublic<Product>(
@@ -91,12 +96,13 @@ const ProductPage: React.FC = () => {
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={{ opacity: inView ? 1 : 0 }}
       exit={{ opacity: 0 }}
       className="container mx-auto px-4 py-8"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <ProductImages
           images={product.images}
           name={product.name}
@@ -144,29 +150,29 @@ const ProductImages: React.FC<{
   selectedImage: number;
   setSelectedImage: (index: number) => void;
 }> = ({ images, name, selectedImage, setSelectedImage }) => (
-  <div>
+  <div className="space-y-4">
     <AnimatePresence mode="wait">
       <motion.img
         key={selectedImage}
         src={images[selectedImage]}
         alt={`${name} - main`}
-        className="w-full h-auto object-cover rounded-lg mb-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        className="w-full h-auto object-cover rounded-lg shadow-lg"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
         transition={{ duration: 0.3 }}
       />
     </AnimatePresence>
-    <Carousel className="w-full max-w-xs mx-auto">
+    <Carousel className="w-full max-w-md mx-auto">
       <CarouselContent>
         {images.map((image, index) => (
-          <CarouselItem key={index} className="basis-1/4">
+          <CarouselItem key={index} className="basis-1/4 sm:basis-1/5 md:basis-1/6">
             <motion.img
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               src={image}
               alt={`${name} - ${index + 1}`}
-              className={`w-full h-auto object-cover rounded-lg cursor-pointer ${
+              className={`w-full h-auto object-cover rounded-lg cursor-pointer transition-all duration-300 ${
                 selectedImage === index ? "ring-2 ring-primary_color" : ""
               }`}
               onClick={() => setSelectedImage(index)}
@@ -206,7 +212,7 @@ const ProductDetails: React.FC<{ product: Product }> = ({ product }) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.5, staggerChildren: 0.1 }}
       className="rounded-lg shadow-lg space-y-6 p-6 bg-gray-800"
     >
       <motion.h1
@@ -265,7 +271,7 @@ const ProductDetails: React.FC<{ product: Product }> = ({ product }) => {
       </motion.p>
 
       <motion.div
-        className="grid grid-cols-2 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6 }}
@@ -291,7 +297,7 @@ const ProductDetails: React.FC<{ product: Product }> = ({ product }) => {
         transition={{ delay: 0.7 }}
       >
         <h3 className="text-lg font-semibold text-gray-200">Details</h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {product.details.map((detail, index) => (
             <div key={index} className="flex flex-col">
               <span className="font-medium text-gray-300">
@@ -310,7 +316,7 @@ const ProductDetails: React.FC<{ product: Product }> = ({ product }) => {
         transition={{ delay: 0.8 }}
       >
         <h3 className="text-lg font-semibold text-gray-200">Variants</h3>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {product.variants.map((variant, index) => (
             <Badge key={index} variant="outline" className="px-3 py-1">
               {variant.sku} - ${variant.price} (Stock: {variant.stock})
@@ -336,28 +342,28 @@ const ProductDetails: React.FC<{ product: Product }> = ({ product }) => {
       </motion.div>
 
       <motion.div
-        className="grid grid-cols-3 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1 }}
       >
         <Button
           onClick={() => openProductActionSidebar(product._id, "add-to-cart")}
-          className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
         >
           <ShoppingCart className="mr-2 h-4 w-4" />
           Add to Cart
         </Button>
         <Button
           onClick={() => openProductActionSidebar(product._id, "buy-now")}
-          className="bg-green-600 hover:bg-green-700 text-white transition-colors duration-300"
+          className="w-full bg-green-600 hover:bg-green-700 text-white transition-colors duration-300"
         >
           <CreditCard className="mr-2 h-4 w-4" />
           Buy Now
         </Button>
         <Button
           onClick={handleAddToWishlist}
-          className="bg-red-600 hover:bg-red-700 text-white transition-colors duration-300"
+          className="w-full bg-red-600 hover:bg-red-700 text-white transition-colors duration-300"
         >
           <Heart className="mr-2 h-4 w-4" />
           Wishlist

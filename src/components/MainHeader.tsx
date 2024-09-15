@@ -17,6 +17,7 @@ import {
   Settings,
   Moon,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import SearchBar from "./SearchBar";
@@ -47,10 +48,10 @@ const MainHeader: React.FC = () => {
       initial={{ opacity: 0, y: -50 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="w-full bg-background_secondary shadow-md h-16"
+      className="w-full bg-background_secondary shadow-md h-14 sm:h-16"
     >
       <div className="mx-auto h-full">
-        <div className="flex justify-between items-center h-full px-8">
+        <div className="flex justify-between items-center h-full px-4 sm:px-8">
           <motion.div
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -60,22 +61,31 @@ const MainHeader: React.FC = () => {
             <img
               src="https://i.ibb.co/CMSJMK3/Brandmark-make-your-logo-in-minutes-removebg-preview.png"
               alt="Logo"
-              className="h-8 w-auto"
+              className="h-6 sm:h-8 w-auto"
             />
           </motion.div>
-          <div className="flex items-center space-x-4">
-            {/* SearchBar */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <SearchBar />
-            <NotificationDropdown />
-            <AnimatedIconButton
-              icon={<Heart size={20} />}
-              onClick={() => handleNavigation("/wishlist")}
-            />
-            <AnimatedIconButton
-              icon={<ShoppingCart size={20} />}
-              onClick={() => handleNavigation("/cart")}
-            />
+            <div className="hidden sm:flex items-center space-x-2 sm:space-x-4">
+              <NotificationDropdown />
+              <AnimatedIconButton
+                icon={<Heart size={20} />}
+                onClick={() => handleNavigation("/wishlist")}
+              />
+              <AnimatedIconButton
+                icon={<ShoppingCart size={20} />}
+                onClick={() => handleNavigation("/cart")}
+              />
+            </div>
             {currentUser && <UserDropdown currentUser={currentUser} />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="sm:hidden"
+              onClick={() => {/* Toggle mobile menu */}}
+            >
+              <Menu size={24} />
+            </Button>
           </div>
         </div>
       </div>

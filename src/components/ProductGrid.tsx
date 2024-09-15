@@ -26,28 +26,13 @@ interface ProductGridProps {
 }
 
 const gridConfigs = {
-  "1x4": { cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-4", perPage: 4 },
-  "2x4": { cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-4", perPage: 8 },
-  "3x4": {
-    cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-    perPage: 12,
-  },
-  "3x5": {
-    cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5",
-    perPage: 15,
-  },
-  "8x2": {
-    cols: "grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8",
-    perPage: 16,
-  },
-  "4x3": {
-    cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4",
-    perPage: 12,
-  },
-  "5x3": {
-    cols: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5",
-    perPage: 15,
-  },
+  "1x4": { cols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4", perPage: 4 },
+  "2x4": { cols: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4", perPage: 8 },
+  "3x4": { cols: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4", perPage: 12 },
+  "3x5": { cols: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5", perPage: 15 },
+  "8x2": { cols: "grid-cols-2 sm:grid-cols-4 lg:grid-cols-8", perPage: 16 },
+  "4x3": { cols: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4", perPage: 12 },
+  "5x3": { cols: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5", perPage: 15 },
 };
 
 const ProductGrid: React.FC<ProductGridProps> = ({

@@ -38,13 +38,13 @@ const MenuHeader: React.FC = () => {
   };
 
   return (
-    <div className="bg-background border-b h-10 flex justify-between px-8">
+    <div className="bg-background border-b h-10 hidden sm:flex justify-between px-8">
       <div className="h-full">
-        <ul className="flex justify-center space-x-8 h-full items-center">
+        <ul className="flex justify-center space-x-4 sm:space-x-8 h-full items-center">
           <li>
             <Button
               variant="ghost"
-              className="h-8 px-3 py-1"
+              className="h-8 px-2 sm:px-3 py-1 text-sm"
               onClick={() => navigate("/")}
             >
               Home
@@ -53,8 +53,8 @@ const MenuHeader: React.FC = () => {
           <li>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 px-3 py-1">
-                  Categories <ChevronDown className="ml-1 h-4 w-4" />
+                <Button variant="ghost" className="h-8 px-2 sm:px-3 py-1 text-sm">
+                  Categories <ChevronDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -72,20 +72,20 @@ const MenuHeader: React.FC = () => {
             </DropdownMenu>
           </li>
           <li>
-            <Button variant="ghost" className="h-8 px-3 py-1">
+            <Button variant="ghost" className="h-8 px-2 sm:px-3 py-1 text-sm">
               Shop
             </Button>
           </li>
           <li>
-            <Button variant="ghost" className="h-8 px-3 py-1">
+            <Button variant="ghost" className="h-8 px-2 sm:px-3 py-1 text-sm">
               Product
             </Button>
           </li>
           <li>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 px-3 py-1">
-                  Pages <ChevronDown className="ml-1 h-4 w-4" />
+                <Button variant="ghost" className="h-8 px-2 sm:px-3 py-1 text-sm">
+                  Pages <ChevronDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>

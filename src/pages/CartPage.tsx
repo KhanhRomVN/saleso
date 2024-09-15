@@ -178,142 +178,139 @@ const CartPage: React.FC = () => {
                 className="flex items-center space-x-2 hover:bg-red-600 transition-colors duration-300"
               >
                 <Trash2 size={16} />
-                <span>Clear All</span>
+                <span className="hidden sm:inline">Clear All</span>
               </Button>
             </div>
-            <div className="w-full flex flex-col md:flex-row justify-between gap-4">
-              <div className="w-full md:w-[75%]">
-                <Table className="bg-background_secondary rounded-lg shadow-md">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">Select</TableHead>
-                      <TableHead className="w-[50px]">No.</TableHead>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Variant</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Stock</TableHead>
-                      <TableHead>Total</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cartData?.items.map((item, index) => {
-                      const selectedVariant = getSelectedVariant(item);
-                      return (
-                        <TableRow
-                          key={item.product_id}
-                          className="hover:bg-background transition-colors duration-200"
-                        >
-                          <TableCell>
-                            <Checkbox
-                              className="bg-white"
-                              checked={selectedItems.includes(item.product_id)}
-                              onCheckedChange={() =>
-                                toggleItemSelection(item.product_id)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell className="flex items-center space-x-2">
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-12 h-12 object-cover rounded"
-                            />
-                            <div>
-                              <p className="font-medium">{item.name}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Select
-                              value={item.selected_sku}
-                              onValueChange={(value) =>
-                                handleSkuChange(item.product_id, value)
-                              }
-                            >
-                              <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select variant" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {item.variants.map((variant) => (
-                                  <SelectItem
-                                    key={variant.sku}
-                                    value={variant.sku}
-                                  >
-                                    {variant.sku}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell>
-                            ${selectedVariant?.price.toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  handleQuantityChange(
-                                    item.product_id,
-                                    item.quantity - 1
-                                  )
+            <div className="w-full flex flex-col lg:flex-row justify-between gap-4">
+              <div className="w-full lg:w-[70%]">
+                <div className="overflow-x-auto">
+                  <Table className="bg-background_secondary rounded-lg shadow-md w-full">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">Select</TableHead>
+                        <TableHead className="w-[50px]">No.</TableHead>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Variant</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cartData?.items.map((item, index) => {
+                        const selectedVariant = getSelectedVariant(item);
+                        return (
+                          <TableRow
+                            key={item.product_id}
+                            className="hover:bg-background transition-colors duration-200"
+                          >
+                            <TableCell>
+                              <Checkbox
+                                className="bg-white"
+                                checked={selectedItems.includes(item.product_id)}
+                                onCheckedChange={() =>
+                                  toggleItemSelection(item.product_id)
                                 }
-                                disabled={item.quantity <= 1}
-                              >
-                                <Minus size={16} />
-                              </Button>
-                              <Input
-                                type="number"
-                                min="1"
-                                max={selectedVariant?.stock}
-                                value={item.quantity}
-                                onChange={(e) =>
-                                  handleQuantityChange(
-                                    item.product_id,
-                                    parseInt(e.target.value)
-                                  )
-                                }
-                                className="w-16 text-center"
                               />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  handleQuantityChange(
-                                    item.product_id,
-                                    item.quantity + 1
-                                  )
-                                }
-                                disabled={
-                                  item.quantity >= (selectedVariant?.stock || 0)
+                            </TableCell>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell className="flex items-center space-x-2">
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                              <div>
+                                <p className="font-medium">{item.name}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={item.selected_sku}
+                                onValueChange={(value) =>
+                                  handleSkuChange(item.product_id, value)
                                 }
                               >
-                                <Plus size={16} />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>{selectedVariant?.stock}</TableCell>
-                          <TableCell>
-                            ${calculateTotal(item).toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-right font-bold">
-                        End Total:
-                      </TableCell>
-                      <TableCell className="font-bold">
-                        ${calculateEndTotal().toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                                <SelectTrigger className="w-[120px] sm:w-[180px]">
+                                  <SelectValue placeholder="Select variant" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {item.variants.map((variant) => (
+                                    <SelectItem
+                                      key={variant.sku}
+                                      value={variant.sku}
+                                    >
+                                      {variant.sku}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              ${selectedVariant?.price.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleQuantityChange(
+                                      item.product_id,
+                                      item.quantity - 1
+                                    )
+                                  }
+                                  disabled={item.quantity <= 1}
+                                >
+                                  <Minus size={16} />
+                                </Button>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max={selectedVariant?.stock}
+                                  value={item.quantity}
+                                  onChange={(e) =>
+                                    handleQuantityChange(
+                                      item.product_id,
+                                      parseInt(e.target.value)
+                                    )
+                                  }
+                                  className="w-16 text-center"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    handleQuantityChange(
+                                      item.product_id,
+                                      item.quantity + 1
+                                    )
+                                  }
+                                  disabled={
+                                    item.quantity >= (selectedVariant?.stock || 0)
+                                  }
+                                >
+                                  <Plus size={16} />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              ${calculateTotal(item).toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="mt-4 text-right">
+                  <p className="font-bold">
+                    End Total: ${calculateEndTotal().toFixed(2)}
+                  </p>
+                </div>
               </div>
-              <div className="w-full md:w-[25%] flex flex-col">
-                <Card className="bg-background_secondary rounded-lg shadow-md">
+              <div className="w-full lg:w-[30%] flex flex-col">
+                <Card className="bg-background_secondary rounded-lg shadow-md sticky top-4">
                   <CardHeader>
                     <CardTitle>Order Summary</CardTitle>
                   </CardHeader>
@@ -329,9 +326,8 @@ const CartPage: React.FC = () => {
                     </Button>
                   </CardContent>
                 </Card>
-                <p className="text-xs text-gray-600">
-                  (This total amount does not include discounts or delivery
-                  fees)
+                <p className="text-xs text-gray-600 mt-2">
+                  (This total amount does not include discounts or delivery fees)
                 </p>
               </div>
             </div>
