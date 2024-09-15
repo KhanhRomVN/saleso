@@ -1,205 +1,184 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { getPublic } from "@/utils/authUtils";
+import { Star, MapPin, Tag } from "lucide-react";
+import { Product, Variant } from "@/types/product";
 
 interface FilterProductBarProps {
-  onFilterChange: (filters: FilterOptions) => void;
+  products: Product[];
+  onFilterChange: (filters: any) => void;
 }
 
-interface FilterOptions {
-  value?: string;
-  countryOfOrigin?: string;
-  brand?: string;
-  priceMin?: string | number;
-  priceMax?: string | number;
-  rating?: string | number;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
-}
-
-const FilterProductBar: React.FC<FilterProductBarProps> = ({
+export default function FilterProductBar({
+  products,
   onFilterChange,
-}) => {
-  const [filters, setFilters] = useState<FilterOptions>({
-    value: "",
-    countryOfOrigin: "",
-    brand: "",
-    priceMin: "",
-    priceMax: "",
-    rating: "",
-    sortBy: "relevance",
-    sortOrder: "desc",
+}: FilterProductBarProps) {
+  const [variants, setVariants] = useState<Variant[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState({
+    sku: "",
+    group: "",
+    address: "",
+    rating: 0,
+    priceRange: [0, 1000],
   });
 
-  const handleInputChange = useCallback(
-    (field: keyof FilterOptions, value: string) => {
-      setFilters((prev) => ({ ...prev, [field]: value }));
-    },
-    []
-  );
+  useEffect(() => {
+    fetchVariants();
+  }, [products]);
 
-  const handleApplyFilters = useCallback(() => {
-    onFilterChange({
-      ...filters,
-      priceMin: filters.priceMin !== "" ? Number(filters.priceMin) : undefined,
-      priceMax: filters.priceMax !== "" ? Number(filters.priceMax) : undefined,
-      rating: filters.rating !== "" ? Number(filters.rating) : undefined,
-    });
-  }, [filters, onFilterChange]);
+  const fetchVariants = async () => {
+    if (products.length === 0) return;
+
+    const categoryCount = products.reduce((acc, product) => {
+      product.categories.forEach((category) => {
+        acc[category.category_id] = (acc[category.category_id] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+
+    const mostCommonCategoryId = Object.entries(categoryCount).reduce((a, b) =>
+      a[1] > b[1] ? a : b
+    )[0];
+
+    try {
+      const response = await getPublic<Variant[][]>(
+        `/variant/category/${mostCommonCategoryId}`
+      );
+      const processedVariants = response
+        .slice(0, 3)
+        .flatMap((group) => group.slice(0, 3));
+      setVariants(processedVariants);
+    } catch (error) {
+      console.error("Error fetching variants:", error);
+    }
+  };
+
+  const handleFilterChange = (key: string, value: any) => {
+    setSelectedFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const applyFilters = () => {
+    onFilterChange(selectedFilters);
+  };
+
+  const groupedVariants = variants.reduce((acc, variant) => {
+    if (!acc[variant.group]) {
+      acc[variant.group] = [];
+    }
+    acc[variant.group].push(variant);
+    return acc;
+  }, {} as Record<string, Variant[]>);
 
   return (
-    <div className="bg-background_secondary p-4 rounded-lg shadow-md grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <FilterInput
-        label="Search"
-        id="search"
-        placeholder="Search products"
-        value={filters.value}
-        onChange={(value) => handleInputChange("value", value)}
-      />
+    <motion.div
+      initial={{ x: -50, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="w-full md:w-64 p-4 bg-background border rounded-lg shadow-md"
+    >
+      <h3 className="text-lg font-semibold mb-4">Filters</h3>
 
-      <FilterSelect
-        label="Country of Origin"
-        id="country"
-        value={filters.countryOfOrigin}
-        onChange={(value) => handleInputChange("countryOfOrigin", value)}
-        options={[
-          { value: "USA", label: "USA" },
-          { value: "China", label: "China" },
-          { value: "Japan", label: "Japan" },
-          { value: "Germany", label: "Germany" },
-          { value: "France", label: "France" },
-        ]}
-      />
+      {/* Variant filters */}
+      {Object.entries(groupedVariants).map(([group, groupVariants]) => (
+        <div key={group} className="mb-4">
+          <h4 className="font-medium mb-2 flex items-center">
+            <Tag className="w-4 h-4 mr-2" />
+            {group}
+          </h4>
+          {groupVariants.map((variant) => (
+            <div key={variant._id} className="flex items-center mb-1">
+              <Checkbox
+                id={variant.sku}
+                checked={selectedFilters.sku === variant.sku}
+                onCheckedChange={() => handleFilterChange("sku", variant.sku)}
+              />
+              <label htmlFor={variant.sku} className="ml-2 text-sm">
+                {variant.variant}
+              </label>
+            </div>
+          ))}
+        </div>
+      ))}
 
-      <FilterInput
-        label="Brand"
-        id="brand"
-        placeholder="Enter brand name"
-        value={filters.brand}
-        onChange={(value) => handleInputChange("brand", value)}
-      />
+      {/* Address filter */}
+      <div className="mb-4">
+        <h4 className="font-medium mb-2 flex items-center">
+          <MapPin className="w-4 h-4 mr-2" />
+          Address
+        </h4>
+        {["Ha Noi", "Ho Chi Minh", "Da Nang", "Can Tho"].map((city) => (
+          <div key={city} className="flex items-center mb-1">
+            <Checkbox
+              id={city}
+              checked={selectedFilters.address === city}
+              onCheckedChange={() => handleFilterChange("address", city)}
+            />
+            <label htmlFor={city} className="ml-2 text-sm">
+              {city}
+            </label>
+          </div>
+        ))}
+        <Input
+          placeholder="Other address"
+          value={selectedFilters.address}
+          onChange={(e) => handleFilterChange("address", e.target.value)}
+          className="mt-2"
+        />
+      </div>
 
-      <FilterInput
-        label="Minimum Price"
-        id="priceMin"
-        type="number"
-        placeholder="Enter minimum price"
-        value={filters.priceMin}
-        onChange={(value) => handleInputChange("priceMin", value)}
-      />
+      {/* Rating filter */}
+      <div className="mb-4">
+        <h4 className="font-medium mb-2 flex items-center">
+          <Star className="w-4 h-4 mr-2" />
+          Rating
+        </h4>
+        {[1, 2, 3, 4, 5].map((rating) => (
+          <div key={rating} className="flex items-center mb-1">
+            <Checkbox
+              id={`rating-${rating}`}
+              checked={selectedFilters.rating === rating}
+              onCheckedChange={() => handleFilterChange("rating", rating)}
+            />
+            <label
+              htmlFor={`rating-${rating}`}
+              className="ml-2 text-sm flex items-center"
+            >
+              {rating} {rating === 1 ? "star" : "stars"}
+              {Array.from({ length: rating }).map((_, index) => (
+                <Star
+                  key={index}
+                  className="w-3 h-3 ml-1 text-yellow-400 fill-current"
+                />
+              ))}
+            </label>
+          </div>
+        ))}
+      </div>
 
-      <FilterInput
-        label="Maximum Price"
-        id="priceMax"
-        type="number"
-        placeholder="Enter maximum price"
-        value={filters.priceMax}
-        onChange={(value) => handleInputChange("priceMax", value)}
-      />
+      {/* Price Range filter */}
+      <div className="mb-4">
+        <h4 className="font-medium mb-2">Price Range</h4>
+        <Slider
+          min={0}
+          max={1000}
+          step={10}
+          value={selectedFilters.priceRange}
+          onValueChange={(value) => handleFilterChange("priceRange", value)}
+          className="mb-2"
+        />
+        <div className="flex justify-between text-sm">
+          <span>${selectedFilters.priceRange[0]}</span>
+          <span>${selectedFilters.priceRange[1]}</span>
+        </div>
+      </div>
 
-      <FilterSelect
-        label="Rating"
-        id="rating"
-        placeholder="Select rating"
-        value={filters.rating?.toString()}
-        onChange={(value) => handleInputChange("rating", value)}
-        options={[
-          { value: "1", label: "1 star and above" },
-          { value: "2", label: "2 stars and above" },
-          { value: "3", label: "3 stars and above" },
-          { value: "4", label: "4 stars and above" },
-          { value: "5", label: "5 stars" },
-        ]}
-      />
-
-      <FilterSelect
-        label="Sort By"
-        id="sortBy"
-        placeholder="Select sorting"
-        value={filters.sortBy}
-        onChange={(value) => handleInputChange("sortBy", value)}
-        options={[
-          { value: "relevance", label: "Relevance" },
-          { value: "price", label: "Price" },
-          { value: "rating", label: "Rating" },
-          { value: "date", label: "Date" },
-        ]}
-      />
-
-      <FilterSelect
-        label="Sort Order"
-        id="sortOrder"
-        placeholder="Select order"
-        value={filters.sortOrder}
-        onChange={(value) =>
-          handleInputChange("sortOrder", value as "asc" | "desc")
-        }
-        options={[
-          { value: "asc", label: "Ascending" },
-          { value: "desc", label: "Descending" },
-        ]}
-      />
-
-      <Button onClick={handleApplyFilters} className="w-full col-span-full">
+      <Button onClick={applyFilters} className="w-full">
         Apply Filters
       </Button>
-    </div>
+    </motion.div>
   );
-};
-
-// Tạo các component con để tái sử dụng
-const FilterInput = ({
-  label,
-  id,
-  onChange,
-  ...props
-}: { label: string; id: string; onChange: (value: string) => void } & Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  "onChange"
->) => (
-  <div>
-    <Label htmlFor={id}>{label}</Label>
-    <Input id={id} {...props} onChange={(e) => onChange(e.target.value)} />
-  </div>
-);
-
-const FilterSelect = ({
-  label,
-  id,
-  options,
-  onChange,
-  placeholder,
-  ...props
-}: {
-  label: string;
-  id: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-  placeholder?: string;
-} & Omit<React.ComponentProps<typeof Select>, 'onValueChange'>) => (
-  <div>
-    <Label htmlFor={id}>{label}</Label>
-    <Select onValueChange={onChange} {...props}>
-      <SelectTrigger id={id}>
-        <SelectValue placeholder={placeholder ?? "Select an option"} />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((option) => (
-          <SelectItem key={option.value} value={option.value}>
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  </div>
-);
-
-export default FilterProductBar;
+}

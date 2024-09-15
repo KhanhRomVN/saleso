@@ -8,7 +8,6 @@ import CheckoutPage from "./pages/CheckoutPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import SettingPage from "./pages/SettingPage";
 import SearchPage from "./pages/SearchPage";
-import CategoriesSearch from "./pages/CategoriesSearch";
 import DefaultLayout from "@/layout/defaultLayout";
 import PaymentPage from "./pages/PaymentPage";
 
@@ -82,14 +81,6 @@ const publicRoutes = [
     element: (
       <DefaultLayout>
         <SearchPage />
-      </DefaultLayout>
-    ),
-  },
-  {
-    path: "/categories/:id/:category_name",
-    element: (
-      <DefaultLayout>
-        <CategoriesSearch />
       </DefaultLayout>
     ),
   },

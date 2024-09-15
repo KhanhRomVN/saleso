@@ -16,6 +16,8 @@ interface Product {
   price: number;
   rating: number;
   discount_value?: number;
+  seller_id?: string | null;
+  categories?: { category_id: string; category_name: string }[] | [];
 }
 
 interface ProductGridProps {
