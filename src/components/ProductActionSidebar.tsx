@@ -151,13 +151,13 @@ const ProductActionSidebar: React.FC = () => {
       {isOpen && (
         <>
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            className="fixed inset-0 bg-black bg-opacity-70 z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           />
           <motion.div
-            className="fixed top-0 right-0 w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-2/5 h-screen bg-background shadow-lg z-50 overflow-y-auto"
+            className="fixed top-0 right-0 w-full sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-2/5 h-screen bg-gray-900 shadow-lg z-50 overflow-y-auto"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -166,18 +166,18 @@ const ProductActionSidebar: React.FC = () => {
             <div className="p-4">
               <Button
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-2 right-2 text-gray-300 hover:text-white"
                 onClick={closeProductActionSidebar}
               >
                 <X size={24} />
               </Button>
 
-              <h2 className="text-xl font-bold mb-4 pr-8">
+              <h2 className="text-xl font-bold mb-4 pr-8 text-white">
                 {action === "add-to-cart" ? "Add to cart" : "Buy now"}
               </h2>
 
-              {loading && <p>Loading...</p>}
-              {error && <p className="text-red-500">{error}</p>}
+              {loading && <p className="text-gray-300">Loading...</p>}
+              {error && <p className="text-red-400">{error}</p>}
               {product && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -220,13 +220,21 @@ const ProductActionSidebar: React.FC = () => {
                     </Button>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{product.name}</h3>
-                    <p className="text-sm">Address: {product.address}</p>
-                    <p className="text-sm">Origin: {product.origin}</p>
+                    <h3 className="text-lg font-semibold text-white">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-gray-300">
+                      Address: {product.address}
+                    </p>
+                    <p className="text-sm text-gray-300">
+                      Origin: {product.origin}
+                    </p>
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-medium mb-2">Variants</h4>
+                    <h4 className="text-sm font-medium mb-2 text-gray-300">
+                      Variants
+                    </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {product.variants.map((variant) => (
                         <Button
@@ -236,7 +244,11 @@ const ProductActionSidebar: React.FC = () => {
                           }
                           size="sm"
                           onClick={() => setSelectedSku(variant.sku)}
-                          className="w-full text-xs"
+                          className={`w-full text-xs ${
+                            selectedSku === variant.sku
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                          }`}
                         >
                           {variant.sku}
                           <br />${variant.price} - {variant.stock} in stock
@@ -246,7 +258,7 @@ const ProductActionSidebar: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
                       Quantity
                     </label>
                     <div className="flex items-center">
@@ -254,6 +266,7 @@ const ProductActionSidebar: React.FC = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuantityChange(quantity - 1)}
+                        className="bg-gray-800 text-gray-300 hover:bg-gray-700"
                       >
                         -
                       </Button>
@@ -263,12 +276,13 @@ const ProductActionSidebar: React.FC = () => {
                         onChange={(e) =>
                           handleQuantityChange(parseInt(e.target.value))
                         }
-                        className="w-16 mx-2 text-center"
+                        className="w-16 mx-2 text-center bg-gray-800 text-white border-gray-700"
                       />
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleQuantityChange(quantity + 1)}
+                        className="bg-gray-800 text-gray-300 hover:bg-gray-700"
                       >
                         +
                       </Button>
@@ -276,7 +290,7 @@ const ProductActionSidebar: React.FC = () => {
                   </div>
 
                   <Button
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                    className="w-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                     onClick={
                       action === "add-to-cart" ? handleAddToCart : handleBuyNow
                     }

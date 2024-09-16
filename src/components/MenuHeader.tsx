@@ -33,8 +33,8 @@ const MenuHeader: React.FC = () => {
     fetchCategories();
   }, []);
 
-  const handleCategoryClick = (id: string, slug: string) => {
-    navigate(`/categories/${id}/${slug}`);
+  const handleCategoryClick = (_id: string, slug: string) => {
+    navigate(`/search/${slug}`);
   };
 
   return (
@@ -53,17 +53,22 @@ const MenuHeader: React.FC = () => {
           <li>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 px-2 sm:px-3 py-1 text-sm">
-                  Categories <ChevronDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
+                <Button
+                  variant="ghost"
+                  className="h-8 px-2 sm:px-3 py-1 text-sm"
+                >
+                  Categories{" "}
+                  <ChevronDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="bg-background">
                 {categories.map((category) => (
                   <DropdownMenuItem
                     key={category._id}
                     onClick={() =>
                       handleCategoryClick(category._id, category.slug)
                     }
+                    className="cursor-pointer"
                   >
                     {category.name}
                   </DropdownMenuItem>
@@ -84,7 +89,10 @@ const MenuHeader: React.FC = () => {
           <li>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 px-2 sm:px-3 py-1 text-sm">
+                <Button
+                  variant="ghost"
+                  className="h-8 px-2 sm:px-3 py-1 text-sm"
+                >
                   Pages <ChevronDown className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
               </DropdownMenuTrigger>

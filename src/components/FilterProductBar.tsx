@@ -1,12 +1,21 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { getPublic } from "@/utils/authUtils";
-import { Star, MapPin, Tag } from "lucide-react";
-import { Product, Variant } from "@/types/product";
+import { Star, MapPin } from "lucide-react";
+
+interface Product {
+  id: string;
+  _id: string;
+  name: string;
+  image: string;
+  price: number;
+  rating: number;
+  discount_value?: number;
+  seller_id?: string | null;
+  categories?: { category_id: string; category_name: string }[] | [];
+}
 
 interface FilterProductBarProps {
   products: Product[];
@@ -14,48 +23,12 @@ interface FilterProductBarProps {
 }
 
 export default function FilterProductBar({
-  products,
   onFilterChange,
 }: FilterProductBarProps) {
-  const [variants, setVariants] = useState<Variant[]>([]);
   const [selectedFilters, setSelectedFilters] = useState({
-    sku: "",
-    group: "",
     address: "",
     rating: 0,
-    priceRange: [0, 1000],
   });
-
-  useEffect(() => {
-    fetchVariants();
-  }, [products]);
-
-  const fetchVariants = async () => {
-    if (products.length === 0) return;
-
-    const categoryCount = products.reduce((acc, product) => {
-      product.categories.forEach((category) => {
-        acc[category.category_id] = (acc[category.category_id] || 0) + 1;
-      });
-      return acc;
-    }, {} as Record<string, number>);
-
-    const mostCommonCategoryId = Object.entries(categoryCount).reduce((a, b) =>
-      a[1] > b[1] ? a : b
-    )[0];
-
-    try {
-      const response = await getPublic<Variant[][]>(
-        `/variant/category/${mostCommonCategoryId}`
-      );
-      const processedVariants = response
-        .slice(0, 3)
-        .flatMap((group) => group.slice(0, 3));
-      setVariants(processedVariants);
-    } catch (error) {
-      console.error("Error fetching variants:", error);
-    }
-  };
 
   const handleFilterChange = (key: string, value: any) => {
     setSelectedFilters((prev) => ({ ...prev, [key]: value }));
@@ -65,44 +38,19 @@ export default function FilterProductBar({
     onFilterChange(selectedFilters);
   };
 
-  const groupedVariants = variants.reduce((acc, variant) => {
-    if (!acc[variant.group]) {
-      acc[variant.group] = [];
-    }
-    acc[variant.group].push(variant);
-    return acc;
-  }, {} as Record<string, Variant[]>);
+  const clearFilters = () => {
+    setSelectedFilters({ address: "", rating: 0 });
+    onFilterChange({ address: "", rating: 0 });
+  };
 
   return (
     <motion.div
       initial={{ x: -50, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="w-full md:w-64 p-4 bg-background border rounded-lg shadow-md"
+      className="w-full md:w-64 p-4 bg-background_secondary border rounded-lg shadow-md"
     >
       <h3 className="text-lg font-semibold mb-4">Filters</h3>
-
-      {/* Variant filters */}
-      {Object.entries(groupedVariants).map(([group, groupVariants]) => (
-        <div key={group} className="mb-4">
-          <h4 className="font-medium mb-2 flex items-center">
-            <Tag className="w-4 h-4 mr-2" />
-            {group}
-          </h4>
-          {groupVariants.map((variant) => (
-            <div key={variant._id} className="flex items-center mb-1">
-              <Checkbox
-                id={variant.sku}
-                checked={selectedFilters.sku === variant.sku}
-                onCheckedChange={() => handleFilterChange("sku", variant.sku)}
-              />
-              <label htmlFor={variant.sku} className="ml-2 text-sm">
-                {variant.variant}
-              </label>
-            </div>
-          ))}
-        </div>
-      ))}
 
       {/* Address filter */}
       <div className="mb-4">
@@ -159,26 +107,14 @@ export default function FilterProductBar({
         ))}
       </div>
 
-      {/* Price Range filter */}
-      <div className="mb-4">
-        <h4 className="font-medium mb-2">Price Range</h4>
-        <Slider
-          min={0}
-          max={1000}
-          step={10}
-          value={selectedFilters.priceRange}
-          onValueChange={(value) => handleFilterChange("priceRange", value)}
-          className="mb-2"
-        />
-        <div className="flex justify-between text-sm">
-          <span>${selectedFilters.priceRange[0]}</span>
-          <span>${selectedFilters.priceRange[1]}</span>
-        </div>
+      <div className="flex gap-2">
+        <Button onClick={applyFilters} className="flex-grow">
+          Apply Filters
+        </Button>
+        <Button onClick={clearFilters} variant="outline" className="flex-grow">
+          Clear
+        </Button>
       </div>
-
-      <Button onClick={applyFilters} className="w-full">
-        Apply Filters
-      </Button>
     </motion.div>
   );
 }

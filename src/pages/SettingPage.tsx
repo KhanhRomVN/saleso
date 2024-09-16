@@ -9,7 +9,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  // DialogTrigger,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,9 +33,16 @@ import {
   XCircle,
   DollarSign,
   ShoppingCart,
+  CreditCard,
+  MessageCircle,
+  Bell,
+  Shield,
+  HelpCircle,
+  LogOut,
 } from "lucide-react";
-import NotImplementedNotice from "@/components/NotImplementedNotice";
 import { get, post, put } from "@/utils/authUtils";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 
 type TabId = "account" | "address" | "orders" | "payment" | "message" | "other";
 
@@ -72,7 +78,7 @@ const SettingPage: React.FC = () => {
         orientation="horizontal"
         value={activeTab}
         onValueChange={handleTabChange}
-        className="flex flex-col md:flex-row flex-grow"
+        className="flex flex-col md:flex-row flex-grow pb-40"
       >
         <div className="w-[15%] pt-[100px]">
           <TabsList className="flex flex-col bg-transparent items-start">
@@ -713,27 +719,100 @@ const AccountContent: React.FC = () => {
 };
 
 const AddressContent: React.FC = () => {
-  console.log("CC")
-  // useEffect(() => {
-  //   fetchAddresses();
-  // }, []);
-
-  // const fetchAddresses = async () => {
-  //   try {
-  //     const accessToken = localStorage.getItem("accessToken");
-  //     await axios.get(`${BACKEND_URI}/user/user-detail`, {
-  //       headers: { accessToken },
-  //     });
-  //   } catch (error) {
-  //     console.error("Error fetching addresses:", error);
-  //     toast.error("Failed to fetch addresses. Please try again.");
-  //   }
-  // };
-
-  return <div className="flex flex-col gap-2 px-4 pt-2 pb-6"></div>;
+  return (
+    <div className="space-y-8 p-6 bg-gray-900 text-gray-100">
+      <h2 className="text-2xl font-bold text-blue-300">Addresses</h2>
+      <div className="grid gap-6 md:grid-cols-2">
+        {addresses.map((address) => (
+          <Card key={address.id} className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between text-blue-300">
+                <span>{address.type}</span>
+                {address.isDefault && (
+                  <Badge variant="secondary" className="bg-blue-600 text-white">
+                    Default
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-gray-300">
+              <p>{address.street}</p>
+              <p>{`${address.city}, ${address.state} ${address.zipCode}`}</p>
+              <p>{address.country}</p>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button
+                variant="outline"
+                className="bg-gray-700 text-blue-300 border-blue-500 hover:bg-gray-600"
+              >
+                Edit
+              </Button>
+              {!address.isDefault && (
+                <Button
+                  variant="secondary"
+                  onClick={() => handleSetDefault(address.id)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Set as Default
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+      {isAddingNew ? (
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-blue-300">Add New Address</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              {Object.keys(newAddress).map((field) => (
+                <div key={field}>
+                  <Label htmlFor={field} className="text-gray-300">
+                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                  </Label>
+                  <Input
+                    id={field}
+                    value={newAddress[field as keyof typeof newAddress]}
+                    onChange={(e) => handleAddressChange(field, e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-gray-100"
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsAddingNew(false)}
+              className="bg-gray-700 text-blue-300 border-blue-500 hover:bg-gray-600"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddNewAddress}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Add Address
+            </Button>
+          </CardFooter>
+        </Card>
+      ) : (
+        <Button
+          onClick={() => setIsAddingNew(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" /> Add New Address
+        </Button>
+      )}
+    </div>
+  );
 };
 
 interface Order {
+  sku_name: string;
+  product_address: string;
   _id: string;
   product_image: string;
   product_name: string;
@@ -801,11 +880,11 @@ const OrderContent: React.FC = () => {
                 {order.product_name}
               </h3>
               <p className="text-xs md:text-sm text-gray-500">
-                Product ID: {order.product_id}
+                SKU: {order.sku_name}
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
+          <div className="grid grid-cols-2 gap-2 text-xs md:text-sm mb-4">
             <p className="flex items-center">
               <ShoppingCart className="w-4 h-4 mr-2" /> Quantity:{" "}
               {order.quantity}
@@ -813,6 +892,12 @@ const OrderContent: React.FC = () => {
             <p className="flex items-center">
               <DollarSign className="w-4 h-4 mr-2" /> Total: $
               {order.total_amount}
+            </p>
+          </div>
+          <div className="text-xs md:text-sm">
+            <p className="font-semibold">Shipping Route:</p>
+            <p>
+              {order.shipping_address} → {order.product_address}
             </p>
           </div>
         </CardContent>
@@ -878,16 +963,129 @@ interface Order {
   product_image: string;
 }
 
-const PaymentContent = () => {
-  return <NotImplementedNotice title="Payment" />;
+const PaymentContent: React.FC = () => {
+  return (
+    <Card className="bg-background_secondary text-foreground">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <CreditCard className="w-6 h-6" />
+          <span>Payment Methods</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <Label>Credit/Debit Card</Label>
+          <Input placeholder="Card Number" className="bg-input" />
+          <div className="flex space-x-4">
+            <Input placeholder="MM/YY" className="bg-input w-1/2" />
+            <Input placeholder="CVV" className="bg-input w-1/2" />
+          </div>
+          <Button className="w-full">Add Card</Button>
+        </div>
+        <Separator />
+        <div>
+          <Label>Saved Payment Methods</Label>
+          <div className="mt-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <span>Visa ending in 1234</span>
+              <Button variant="outline" size="sm">
+                Remove
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>PayPal</span>
+              <Button variant="outline" size="sm">
+                Remove
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
-const MessageContent = () => {
-  return <NotImplementedNotice title="Message" />;
+const MessageContent: React.FC = () => {
+  return (
+    <Card className="bg-background_secondary text-foreground">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <MessageCircle className="w-6 h-6" />
+          <span>Message Preferences</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Email Notifications</Label>
+            <p className="text-sm text-muted-foreground">
+              Receive order updates via email
+            </p>
+          </div>
+          <Switch />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>SMS Notifications</Label>
+            <p className="text-sm text-muted-foreground">
+              Receive order updates via SMS
+            </p>
+          </div>
+          <Switch />
+        </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <Label>Push Notifications</Label>
+            <p className="text-sm text-muted-foreground">
+              Receive notifications on your device
+            </p>
+          </div>
+          <Switch />
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
-const OtherContent = () => {
-  return <NotImplementedNotice title="Other" />;
+const OtherContent: React.FC = () => {
+  return (
+    <Card className="bg-background_secondary text-foreground">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <HelpCircle className="w-6 h-6" />
+          <span>Other Settings</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Bell className="w-5 h-5" />
+            <span>Notifications</span>
+          </div>
+          <Button variant="outline">Manage</Button>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Shield className="w-5 h-5" />
+            <span>Privacy & Security</span>
+          </div>
+          <Button variant="outline">Review</Button>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <HelpCircle className="w-5 h-5" />
+            <span>Help & Support</span>
+          </div>
+          <Button variant="outline">Contact</Button>
+        </div>
+        <Separator />
+        <Button variant="destructive" className="w-full">
+          <LogOut className="w-4 h-4 mr-2" />
+          Log Out
+        </Button>
+      </CardContent>
+    </Card>
+  );
 };
 
 export default SettingPage;

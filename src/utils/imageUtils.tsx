@@ -14,7 +14,7 @@ export const handleImageSelect = (
   }
 };
 
-export interface CroppedAreaPixels {
+interface CroppedAreaPixels {
   x: number;
   y: number;
   width: number;
