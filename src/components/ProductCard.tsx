@@ -98,104 +98,104 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(
           className="relative cursor-pointer overflow-hidden bg-background_secondary h-full flex flex-col"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          >
-            <CardContent className="p-2 flex flex-col h-full">
-              <div className="relative mb-2">
-                <img
-                  src={productData.image}
-                  alt={productData.name}
-                  className={`object-cover rounded-md ${getGridSpecificStyles}`}
-                  onClick={handleCardClick}
-                />
-                <AnimatePresence>
-                  {isHovered && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute top-2 right-2 flex flex-col gap-2"
+        >
+          <CardContent className="p-2 flex flex-col h-full">
+            <div className="relative mb-2">
+              <img
+                src={productData.image}
+                alt={productData.name}
+                className={`object-cover rounded-md ${getGridSpecificStyles}`}
+                onClick={handleCardClick}
+              />
+              <AnimatePresence>
+                {isHovered && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute top-2 right-2 flex flex-col gap-2"
+                  >
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="rounded-full"
+                      onClick={handleAddToWishlist}
                     >
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="rounded-full"
-                        onClick={handleAddToWishlist}
-                      >
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="secondary"
-                            className="rounded-full"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <img
-                            src={productData.image}
-                            alt={productData.name}
-                            className="w-full h-auto"
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                      <Heart className="h-4 w-4" />
+                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="rounded-full"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <img
+                          src={productData.image}
+                          alt={productData.name}
+                          className="w-full h-auto"
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+            <div className="flex-grow flex flex-col justify-between">
+              <h3
+                className="font-semibold text-xs sm:text-sm lg:text-base mb-1 truncate"
+                title={productData.name}
+                onClick={handleCardClick}
+              >
+                {truncateName(productData.name, 20)}
+              </h3>
+              <div className="flex items-center mb-1">
+                {[...Array(fullStars)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400"
+                  />
+                ))}
+                {hasHalfStar && (
+                  <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+                )}
               </div>
-              <div className="flex-grow flex flex-col justify-between">
-                <h3
-                  className="font-semibold text-xs sm:text-sm lg:text-base mb-1 truncate"
-                  title={productData.name}
-                  onClick={handleCardClick}
-                >
-                  {truncateName(productData.name, 20)}
-                </h3>
-                <div className="flex items-center mb-1">
-                  {[...Array(fullStars)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400"
-                    />
-                  ))}
-                  {hasHalfStar && (
-                    <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
-                  )}
-                </div>
-                <div className="flex justify-between items-center">
-                  <div>
-                    {discountedPrice !== null ? (
-                      <>
-                        <span className="text-xs sm:text-sm lg:text-base font-bold text-primary">
-                          ${discountedPrice.toFixed(2)}
-                        </span>
-                        <span className="text-xs sm:text-sm lg:text-base ml-2 line-through text-gray-500">
-                          ${productData.price.toFixed(2)}
-                        </span>
-                      </>
-                    ) : (
+              <div className="flex justify-between items-center">
+                <div>
+                  {discountedPrice !== null ? (
+                    <>
                       <span className="text-xs sm:text-sm lg:text-base font-bold text-primary">
+                        ${discountedPrice.toFixed(2)}
+                      </span>
+                      <span className="text-xs sm:text-sm lg:text-base ml-2 line-through text-gray-500">
                         ${productData.price.toFixed(2)}
                       </span>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="rounded-full p-1 sm:p-2"
-                    onClick={handleAddToCart}
-                  >
-                    <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </Button>
+                    </>
+                  ) : (
+                    <span className="text-xs sm:text-sm lg:text-base font-bold text-primary">
+                      ${productData.price.toFixed(2)}
+                    </span>
+                  )}
                 </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="rounded-full p-1 sm:p-2"
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      );
-    }
-  );
-  
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+);
+
 export default ProductCard;

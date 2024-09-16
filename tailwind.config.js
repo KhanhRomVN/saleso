@@ -24,6 +24,13 @@ module.exports = {
         background: "var(--background)",
         background_secondary: "var(--background-secondary)",
         foreground: "var(--foreground)",
+        /* customer colors */
+        green_background_opacity: "var(--green-background-opacity)",
+        red_background_opacity: "var(--red-background-opacity)",
+        blue_background_opacity: "var(--blue-background-opacity)",
+        green_background: "var(--green-background)",
+        red_background: "var(--red-background)",
+        blue_background: "var(--blue-background)",
         primary: {
           DEFAULT: "var(--primary)",
           foreground: "var(--primary-foreground)",

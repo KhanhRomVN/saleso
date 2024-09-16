@@ -30,7 +30,13 @@
     --chart-3: #2c3e50;
     --chart-4: #f1c40f;
     --chart-5: #e67e22; 
-
+    /* customer colors */
+    --green-background-opacity: rgba(57, 102, 75, 0.3);
+    --red-background-opacity: rgba(102, 57, 75, 0.3);
+    --blue-background-opacity: rgba(57, 75, 102, 0.3);
+    --green-background: rgba(57, 102, 75, 0.8);
+    --red-background: rgba(102, 57, 75, 0.8);
+    --blue-background: rgba(57, 75, 102, 0.8);
   }
   .dark { 
     --background: #111315;
@@ -58,6 +64,13 @@
     --chart-3: #ff9900;
     --chart-4: #9933cc;
     --chart-5: #ff3366;
+    /* customer colors */
+    --green-background-opacity: rgba(57, 102, 75, 0.3);
+    --red-background-opacity: rgba(102, 57, 75, 0.3);
+    --blue-background-opacity: rgba(57, 75, 102, 0.3);
+    --green-background: rgba(57, 102, 75, 0.8);
+    --red-background: rgba(102, 57, 75, 0.8);
+    --blue-background: rgba(57, 75, 102, 0.8);
   }
 }
 

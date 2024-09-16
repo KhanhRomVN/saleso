@@ -478,21 +478,21 @@ const ProductDetails: React.FC<{
       >
         <Button
           onClick={() => openProductActionSidebar(product._id, "add-to-cart")}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg text-lg py-6"
+          className="w-full bg-blue_background_opacity hover:bg-blue-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg text-base py-6"
         >
           <ShoppingCart className="mr-3 h-6 w-6" />
           Add to Cart
         </Button>
         <Button
           onClick={() => openProductActionSidebar(product._id, "buy-now")}
-          className="w-full bg-green-600 hover:bg-green-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg text-lg py-6"
+          className="w-full bg-green_background_opacity hover:bg-green-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg text-base py-6"
         >
           <CreditCard className="mr-3 h-6 w-6" />
           Buy Now
         </Button>
         <Button
           onClick={handleAddToWishlist}
-          className="w-full bg-red-600 hover:bg-red-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg text-lg py-6"
+          className="w-full bg-red_background_opacity hover:bg-red-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg text-base py-6"
         >
           <Heart className="mr-3 h-6 w-6" />
           Add to Wishlist
@@ -574,7 +574,7 @@ const FeedbackSection: React.FC<{
               Feedback Highlights
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-green-900 bg-opacity-30 p-3 rounded-lg border border-green-700">
+              <div className="bg-green_background_opacity p-3 rounded-lg border border-green-700">
                 <p className="text-green-400 font-medium">
                   Most Helpful Positive
                 </p>
@@ -582,7 +582,7 @@ const FeedbackSection: React.FC<{
                   "{feedbacks[0]?.comment.slice(0, 50)}..."
                 </p>
               </div>
-              <div className="bg-red-900 bg-opacity-30 p-3 rounded-lg border border-red-700">
+              <div className="bg-red_background_opacity p-3 rounded-lg border border-red-700">
                 <p className="text-red-400 font-medium">
                   Most Helpful Critical
                 </p>
@@ -591,7 +591,7 @@ const FeedbackSection: React.FC<{
                 </p>
               </div>
             </div>
-            <div className="bg-blue-900 bg-opacity-30 p-4 rounded-lg border border-blue-700">
+            <div className="bg-blue_background_opacity p-4 rounded-lg border border-blue-700">
               <h4 className="text-blue-400 font-medium mb-2">Quick Stats</h4>
               <ul className="text-sm space-y-1 text-gray-300">
                 <li>🏆 Top Rated Feature: Quality</li>

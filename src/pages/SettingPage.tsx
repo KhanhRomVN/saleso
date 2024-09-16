@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
 import Cropper, { Area } from "react-easy-crop";
 import {
@@ -39,10 +46,15 @@ import {
   Shield,
   HelpCircle,
   LogOut,
+  Plus,
+  MapPin,
+  Calendar,
 } from "lucide-react";
 import { get, post, put } from "@/utils/authUtils";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type TabId = "account" | "address" | "orders" | "payment" | "message" | "other";
 
@@ -72,7 +84,7 @@ const SettingPage: React.FC = () => {
   };
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col gap-4 pt-8">
       <p className="text-3xl ml-4 font-bold">Setting</p>
       <Tabs
         orientation="horizontal"
@@ -410,10 +422,11 @@ const AccountContent: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
+      className="space-y-8 p-6 bg-background_secondary text-gray-100"
     >
-      <Card className="bg-transparent">
+      <Card className="bg-background border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center space-x-2 text-blue-400">
             <User className="w-6 h-6" />
             <span>Personal Information</span>
           </CardTitle>
@@ -424,59 +437,66 @@ const AccountContent: React.FC = () => {
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
-            <Avatar className="w-20 h-20">
+            <Avatar className="w-24 h-24 border-2 border-blue-500">
               <AvatarImage src={customerDetail.avatar_uri} />
-              <AvatarFallback>{customerDetail.name.charAt(0)}</AvatarFallback>
+              <AvatarFallback className="bg-blue-600 text-xl">
+                {customerDetail.name.charAt(0)}
+              </AvatarFallback>
             </Avatar>
             <Button
               onClick={() =>
                 setDialogState((prev) => ({ ...prev, avatar: true }))
               }
               variant="outline"
+              className="bg-gray-700 text-blue-400 border-blue-500 hover:bg-gray-600"
             >
               <Camera className="w-4 h-4 mr-2" /> Change Avatar
             </Button>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {["username", "name", "age"].map((field) => (
               <motion.div
                 key={field}
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "spring", stiffness: 300 }}
+                className="space-y-2"
               >
-                <Label htmlFor={field}>
+                <Label htmlFor={field} className="text-gray-300">
                   {field.charAt(0).toUpperCase() + field.slice(1)}
                 </Label>
-                <Input
-                  id={field}
-                  value={
-                    field === "username"
-                      ? user[field]
-                      : customerDetail[field as keyof typeof customerDetail]
-                  }
-                  onChange={(e) => handleInputChange(field, e.target.value)}
-                  className="mt-1"
-                />
-                <Button
-                  onClick={() => handleUpdate(field)}
-                  disabled={isLoading}
-                  className="mt-2"
-                >
-                  {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  Update {field.charAt(0).toUpperCase() + field.slice(1)}
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id={field}
+                    value={
+                      field === "username"
+                        ? user[field]
+                        : customerDetail[field as keyof typeof customerDetail]
+                    }
+                    onChange={(e) => handleInputChange(field, e.target.value)}
+                    className="bg-gray-700 border-gray-600 text-gray-100 flex-grow"
+                  />
+                  <Button
+                    onClick={() => handleUpdate(field)}
+                    disabled={isLoading}
+                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </motion.div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card className="bg-transparent mt-6">
+      <Card className="bg-background border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center space-x-2 text-blue-400">
             <Info className="w-6 h-6" />
             <span>Account Settings</span>
           </CardTitle>
@@ -489,7 +509,7 @@ const AccountContent: React.FC = () => {
               whileHover={{ scale: 1.02 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
-              <Label htmlFor={field}>
+              <Label htmlFor={field} className="text-gray-300 w-24">
                 {field.charAt(0).toUpperCase() + field.slice(1)}
               </Label>
               <Input
@@ -501,13 +521,14 @@ const AccountContent: React.FC = () => {
                     : user[field as keyof typeof user]
                 }
                 readOnly
-                className="flex-grow"
+                className="flex-grow bg-gray-700 border-gray-600 text-gray-100"
               />
               <Button
                 onClick={() =>
                   handleOpenVerifyDialog(field as "email" | "password")
                 }
                 variant="outline"
+                className="bg-gray-700 text-blue-400 border-blue-500 hover:bg-gray-600"
               >
                 {field === "email" ? (
                   <Mail className="w-4 h-4 mr-2" />
@@ -718,9 +739,86 @@ const AccountContent: React.FC = () => {
   );
 };
 
+interface Address {
+  id: string;
+  type: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
 const AddressContent: React.FC = () => {
+  const [addresses, setAddresses] = useState<Address[]>([
+    {
+      id: "1",
+      type: "Home",
+      street: "123 Main St",
+      city: "Anytown",
+      state: "CA",
+      zipCode: "12345",
+      country: "USA",
+      isDefault: true,
+    },
+    {
+      id: "2",
+      type: "Work",
+      street: "456 Office Blvd",
+      city: "Workville",
+      state: "NY",
+      zipCode: "67890",
+      country: "USA",
+      isDefault: false,
+    },
+  ]);
+
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newAddress, setNewAddress] = useState<
+    Omit<Address, "id" | "isDefault">
+  >({
+    type: "",
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+  });
+
+  const handleSetDefault = (id: string) => {
+    setAddresses(
+      addresses.map((addr) => ({
+        ...addr,
+        isDefault: addr.id === id,
+      }))
+    );
+  };
+
+  const handleAddressChange = (field: string, value: string) => {
+    setNewAddress((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddNewAddress = () => {
+    const newAddr: Address = {
+      ...newAddress,
+      id: (addresses.length + 1).toString(),
+      isDefault: false,
+    };
+    setAddresses([...addresses, newAddr]);
+    setIsAddingNew(false);
+    setNewAddress({
+      type: "",
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "",
+    });
+  };
+
   return (
-    <div className="space-y-8 p-6 bg-gray-900 text-gray-100">
+    <div className="space-y-8 p-6 bg-background_secondary text-gray-100">
       <h2 className="text-2xl font-bold text-blue-300">Addresses</h2>
       <div className="grid gap-6 md:grid-cols-2">
         {addresses.map((address) => (
@@ -811,15 +909,21 @@ const AddressContent: React.FC = () => {
 };
 
 interface Order {
-  sku_name: string;
-  product_address: string;
   _id: string;
-  product_image: string;
-  product_name: string;
   product_id: string;
   quantity: number;
+  sku: string;
   total_amount: number;
+  shipping_fee: number;
+  shipping_address: string;
+  customer_id: string;
+  seller_id: string;
   order_status: string;
+  created_at: string;
+  sku_name: string;
+  product_image: string;
+  product_name: string;
+  product_address: string;
 }
 
 const OrderContent: React.FC = () => {
@@ -861,11 +965,15 @@ const OrderContent: React.FC = () => {
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="mb-4 hover:shadow-lg transition-shadow duration-300 bg-background">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="text-sm md:text-base">Order ID: {order._id}</span>
-            {statusIcons[order.order_status as keyof typeof statusIcons]}
+      <Card className="mb-6 hover:shadow-lg transition-shadow duration-300 bg-gray-800 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center justify-between text-gray-200">
+            <span className="text-sm md:text-base">
+              Order #{order._id.slice(-6)}
+            </span>
+            <Badge variant="outline" className="bg-gray-700 text-yellow-400">
+              {activeTab}
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -873,29 +981,37 @@ const OrderContent: React.FC = () => {
             <img
               src={order.product_image}
               alt={order.product_name}
-              className="w-12 h-12 md:w-16 md:h-16 object-cover rounded-md mr-4"
+              className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-md mr-4"
             />
             <div>
-              <h3 className="font-semibold text-sm md:text-base">
+              <h3 className="font-semibold text-sm md:text-base text-gray-200">
                 {order.product_name}
               </h3>
-              <p className="text-xs md:text-sm text-gray-500">
+              <p className="text-xs md:text-sm text-gray-400">
                 SKU: {order.sku_name}
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-xs md:text-sm mb-4">
+          <div className="grid grid-cols-2 gap-4 text-xs md:text-sm mb-4 text-gray-300">
             <p className="flex items-center">
-              <ShoppingCart className="w-4 h-4 mr-2" /> Quantity:{" "}
+              <ShoppingCart className="w-4 h-4 mr-2 text-blue-400" /> Quantity:{" "}
               {order.quantity}
             </p>
             <p className="flex items-center">
-              <DollarSign className="w-4 h-4 mr-2" /> Total: $
-              {order.total_amount}
+              <DollarSign className="w-4 h-4 mr-2 text-green-400" /> Total: $
+              {order.total_amount.toFixed(2)}
+            </p>
+            <p className="flex items-center col-span-2">
+              <MapPin className="w-4 h-4 mr-2 text-purple-400" /> Shipping:{" "}
+              {order.shipping_address}
+            </p>
+            <p className="flex items-center col-span-2">
+              <Calendar className="w-4 h-4 mr-2 text-red-400" /> Ordered:{" "}
+              {format(new Date(order.created_at), "PPP")}
             </p>
           </div>
-          <div className="text-xs md:text-sm">
-            <p className="font-semibold">Shipping Route:</p>
+          <div className="text-xs md:text-sm text-gray-400">
+            <p className="font-semibold text-gray-300">Shipping Route:</p>
             <p>
               {order.shipping_address} → {order.product_address}
             </p>
@@ -906,14 +1022,18 @@ const OrderContent: React.FC = () => {
   );
 
   return (
-    <div className="container mx-auto p-4">
-      <Tabs defaultValue="Pending" onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+    <div className="container mx-auto p-4 bg-background_secondary text-gray-100">
+      <Tabs
+        defaultValue="Pending"
+        onValueChange={setActiveTab}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-3 mb-8 bg-gray-800">
           {Object.keys(statusIcons).map((status) => (
             <TabsTrigger
               key={status}
               value={status}
-              className="flex items-center justify-center py-2"
+              className="flex items-center justify-center py-2 data-[state=active]:bg-gray-700"
             >
               {statusIcons[status as keyof typeof statusIcons]}
               <span className="ml-2 text-xs md:text-sm">{status}</span>
@@ -922,19 +1042,30 @@ const OrderContent: React.FC = () => {
         </TabsList>
         {Object.keys(statusIcons).map((status) => (
           <TabsContent key={status} value={status}>
-            <h2 className="text-xl md:text-2xl font-bold mb-4 flex items-center">
+            <h2 className="text-xl md:text-2xl font-bold mb-6 flex items-center text-gray-200">
               {statusIcons[status as keyof typeof statusIcons]}
               <span className="ml-2">{status} Orders</span>
             </h2>
             {isLoading ? (
-              <p className="text-center">Loading orders...</p>
+              <div className="space-y-4">
+                {[1, 2, 3].map((n) => (
+                  <Card key={n} className="mb-4 bg-gray-800 border-gray-700">
+                    <CardContent className="p-4">
+                      <Skeleton className="h-6 w-2/3 mb-4 bg-gray-700" />
+                      <Skeleton className="h-20 w-full mb-4 bg-gray-700" />
+                      <Skeleton className="h-4 w-1/2 mb-2 bg-gray-700" />
+                      <Skeleton className="h-4 w-1/3 bg-gray-700" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
               <AnimatePresence>
                 <div className="space-y-4">
                   {orders.length > 0 ? (
                     orders.map(renderOrderCard)
                   ) : (
-                    <p className="text-center">
+                    <p className="text-center text-gray-400">
                       No {status.toLowerCase()} orders found.
                     </p>
                   )}
@@ -947,21 +1078,6 @@ const OrderContent: React.FC = () => {
     </div>
   );
 };
-
-interface Order {
-  _id: string;
-  product_id: string;
-  quantity: number;
-  total_amount: number;
-  discount_id: string;
-  shipping_address: string;
-  shipping_fee: number;
-  customer_id: string;
-  seller_id: string;
-  order_status: string;
-  product_name: string;
-  product_image: string;
-}
 
 const PaymentContent: React.FC = () => {
   return (
