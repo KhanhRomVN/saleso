@@ -10,6 +10,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -49,12 +50,16 @@ import {
   Plus,
   MapPin,
   Calendar,
+  RotateCcw,
+  X,
 } from "lucide-react";
 import { get, post, put } from "@/utils/authUtils";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import NotImplementedNotice from "@/components/NotImplementedNotice";
+import { Textarea } from "@/components/ui/textarea";
 
 type TabId = "account" | "address" | "orders" | "payment" | "message" | "other";
 
@@ -127,616 +132,7 @@ const SettingPage: React.FC = () => {
 };
 
 const AccountContent: React.FC = () => {
-  const [user, setUser] = useState({
-    username: "",
-    email: "",
-    role: "",
-  });
-
-  const [customerDetail, setCustomerDetail] = useState({
-    avatar_uri: "",
-    name: "",
-    age: 0,
-  });
-
-  const [dialogState, setDialogState] = useState({
-    verify: false,
-    email: false,
-    password: false,
-    avatar: false,
-    otp: false,
-    forgetPassword: false,
-    newPassword: false,
-  });
-
-  const [formState, setFormState] = useState({
-    newEmail: "",
-    currentPassword: "",
-    newPassword: "",
-    verifyEmail: "",
-    verifyPassword: "",
-    forgetPasswordEmail: "",
-    newPasswordForReset: "",
-    otp: "",
-    emailOtp: "",
-  });
-
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [verifyPurpose, setVerifyPurpose] = useState<
-    "email" | "password" | null
-  >(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    fetchUserData();
-    fetchCustomerDetail();
-  }, []);
-
-  const fetchUserData = async () => {
-    try {
-      setIsLoading(true);
-      const response = await get<{
-        username: string;
-        email: string;
-        role: string;
-      }>("/user");
-      setUser(response);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      toast.error("Failed to fetch user data");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchCustomerDetail = async () => {
-    try {
-      setIsLoading(true);
-      const response = await get<{
-        avatar_uri: string;
-        name: string;
-        age: number;
-      }>("/user/user-detail");
-      setCustomerDetail(response);
-    } catch (error) {
-      console.error("Error fetching customer detail:", error);
-      toast.error("Failed to fetch customer detail");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFormChange = (field: string, value: string) => {
-    setFormState((prevState) => ({ ...prevState, [field]: value }));
-  };
-
-  const handleInputChange = (field: string, value: string | number) => {
-    if (field === "username") {
-      setUser((prevUser) => ({ ...prevUser, [field]: String(value) }));
-    } else {
-      setCustomerDetail((prevDetail) => ({ ...prevDetail, [field]: value }));
-    }
-  };
-
-  const handleUpdate = async (field: string) => {
-    try {
-      setIsLoading(true);
-      if (field === "username") {
-        await put("/user/update/username", { username: user.username });
-      } else {
-        await put("/user/update/user-detail", customerDetail);
-      }
-      toast.success(
-        `${
-          field.charAt(0).toUpperCase() + field.slice(1)
-        } updated successfully!`
-      );
-      if (field === "username") {
-        fetchUserData();
-      } else {
-        fetchCustomerDetail();
-      }
-    } catch (error) {
-      console.error(`Error updating ${field}:`, error);
-      toast.error(`Failed to update ${field}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const onCropComplete = useCallback(
-    (_croppedArea: Area, croppedAreaPixels: Area) => {
-      setCroppedAreaPixels(
-        croppedAreaPixels as unknown as React.SetStateAction<null>
-      );
-    },
-    []
-  );
-
-  const handleAvatarUpload = async () => {
-    if (selectedImage && croppedAreaPixels) {
-      try {
-        setIsLoading(true);
-        const croppedImage = await cropImageFile(
-          croppedAreaPixels,
-          selectedImage
-        );
-        if (croppedImage) {
-          const imageUrl = await handleUploadCroppedImage(croppedImage);
-          if (imageUrl) {
-            await handleUpdate("avatar_uri");
-            setDialogState((prev) => ({ ...prev, avatar: false }));
-            toast.success("Avatar updated successfully!");
-          }
-        }
-      } catch (error) {
-        console.error("Error uploading avatar:", error);
-        toast.error("Failed to update avatar");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
-
-  // Existing functions remain unchanged
-  const handleVerifyAccount = async () => {
-    try {
-      setIsLoading(true);
-      await post("/user/verify", {
-        email: formState.verifyEmail,
-        password: formState.verifyPassword,
-      });
-      setDialogState((prev) => ({
-        ...prev,
-        verify: false,
-        ...(verifyPurpose ? { [verifyPurpose]: true } : {}),
-      }));
-    } catch (error) {
-      console.error("Error verifying account:", error);
-      toast.error("Failed to verify account");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEmailChange = async () => {
-    try {
-      setIsLoading(true);
-      await post("/user/verify/new-email", { newEmail: formState.newEmail });
-      setDialogState((prev) => ({ ...prev, email: false, otp: true }));
-      toast.success("OTP sent to your new email. Please check your inbox.");
-    } catch (error) {
-      console.error("Error sending OTP:", error);
-      toast.error("Failed to send OTP");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleConfirmEmailChange = async () => {
-    try {
-      setIsLoading(true);
-      await post("/user/update-email", {
-        newEmail: formState.newEmail,
-        otp: formState.emailOtp,
-      });
-      setDialogState((prev) => ({ ...prev, otp: false }));
-      fetchUserData();
-      toast.success("Email updated successfully!");
-    } catch (error) {
-      console.error("Error updating email:", error);
-      toast.error("Failed to update email");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    try {
-      setIsLoading(true);
-      await post("/user/update/password", {
-        newPassword: formState.newPassword,
-      });
-      setDialogState((prev) => ({ ...prev, password: false }));
-      toast.success("Password updated successfully!");
-    } catch (error) {
-      console.error("Error updating password:", error);
-      toast.error("Failed to update password");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSendForgetPasswordEmail = async () => {
-    try {
-      setIsLoading(true);
-      await post("/user/forget-password", {
-        email: formState.forgetPasswordEmail,
-      });
-      toast.success(
-        "Password reset email sent. Please check your inbox for the OTP."
-      );
-      setDialogState((prev) => ({
-        ...prev,
-        forgetPassword: false,
-        newPassword: true,
-      }));
-    } catch (error) {
-      console.error("Error sending forget password email:", error);
-      toast.error("Failed to send forget password email");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleChangePassword = async () => {
-    try {
-      setIsLoading(true);
-      await post("/user/update/forget-password", {
-        otp: formState.otp,
-        newPassword: formState.newPasswordForReset,
-      });
-      toast.success("Password has been successfully reset.");
-      setDialogState((prev) => ({ ...prev, newPassword: false }));
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      toast.error("Failed to reset password");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOpenVerifyDialog = (purpose: "email" | "password") => {
-    setVerifyPurpose(purpose);
-    setDialogState((prev) => ({ ...prev, verify: true }));
-  };
-
-  const renderDialog = (
-    key: keyof typeof dialogState,
-    title: string,
-    description: string,
-    content: React.ReactNode
-  ) => (
-    <Dialog
-      open={dialogState[key]}
-      onOpenChange={(open) =>
-        setDialogState((prev) => ({ ...prev, [key]: open }))
-      }
-    >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        {content}
-      </DialogContent>
-    </Dialog>
-  );
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-8 p-6 bg-background_secondary text-gray-100"
-    >
-      <Card className="bg-background border-gray-700">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-blue-400">
-            <User className="w-6 h-6" />
-            <span>Personal Information</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <motion.div
-            className="flex items-center space-x-4"
-            whileHover={{ scale: 1.05 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <Avatar className="w-24 h-24 border-2 border-blue-500">
-              <AvatarImage src={customerDetail.avatar_uri} />
-              <AvatarFallback className="bg-blue-600 text-xl">
-                {customerDetail.name.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              onClick={() =>
-                setDialogState((prev) => ({ ...prev, avatar: true }))
-              }
-              variant="outline"
-              className="bg-gray-700 text-blue-400 border-blue-500 hover:bg-gray-600"
-            >
-              <Camera className="w-4 h-4 mr-2" /> Change Avatar
-            </Button>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {["username", "name", "age"].map((field) => (
-              <motion.div
-                key={field}
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
-                className="space-y-2"
-              >
-                <Label htmlFor={field} className="text-gray-300">
-                  {field.charAt(0).toUpperCase() + field.slice(1)}
-                </Label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    id={field}
-                    value={
-                      field === "username"
-                        ? user[field]
-                        : customerDetail[field as keyof typeof customerDetail]
-                    }
-                    onChange={(e) => handleInputChange(field, e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-gray-100 flex-grow"
-                  />
-                  <Button
-                    onClick={() => handleUpdate(field)}
-                    disabled={isLoading}
-                    className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-background border-gray-700">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-blue-400">
-            <Info className="w-6 h-6" />
-            <span>Account Settings</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {["email", "password"].map((field) => (
-            <motion.div
-              key={field}
-              className="flex items-center space-x-2"
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <Label htmlFor={field} className="text-gray-300 w-24">
-                {field.charAt(0).toUpperCase() + field.slice(1)}
-              </Label>
-              <Input
-                id={field}
-                type={field === "password" ? "password" : "text"}
-                value={
-                  field === "password"
-                    ? "********"
-                    : user[field as keyof typeof user]
-                }
-                readOnly
-                className="flex-grow bg-gray-700 border-gray-600 text-gray-100"
-              />
-              <Button
-                onClick={() =>
-                  handleOpenVerifyDialog(field as "email" | "password")
-                }
-                variant="outline"
-                className="bg-gray-700 text-blue-400 border-blue-500 hover:bg-gray-600"
-              >
-                {field === "email" ? (
-                  <Mail className="w-4 h-4 mr-2" />
-                ) : (
-                  <Lock className="w-4 h-4 mr-2" />
-                )}{" "}
-                Change
-              </Button>
-            </motion.div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <AnimatePresence>
-        {renderDialog(
-          "avatar",
-          "Change Avatar",
-          "Upload and crop your new avatar image.",
-          <>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) =>
-                handleImageSelect(
-                  e as React.ChangeEvent<HTMLInputElement>,
-                  setSelectedImage as unknown as React.Dispatch<
-                    React.SetStateAction<File[]>
-                  >,
-                  () => setDialogState((prev) => ({ ...prev, avatar: true }))
-                )
-              }
-            />
-            {selectedImage && (
-              <div className="relative h-64">
-                <Cropper
-                  image={selectedImage}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  onCropChange={setCrop}
-                  onZoomChange={setZoom}
-                  onCropComplete={onCropComplete}
-                />
-              </div>
-            )}
-            <Button onClick={handleAvatarUpload} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Upload New Avatar
-            </Button>
-          </>
-        )}
-
-        {renderDialog(
-          "verify",
-          "Verify Account",
-          "Please enter your email and password to verify your account.",
-          <>
-            <Input
-              placeholder="Email"
-              value={formState.verifyEmail}
-              onChange={(e) => handleFormChange("verifyEmail", e.target.value)}
-            />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={formState.verifyPassword}
-              onChange={(e) =>
-                handleFormChange("verifyPassword", e.target.value)
-              }
-            />
-            <Button onClick={handleVerifyAccount} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Verify Account
-            </Button>
-            <Button
-              onClick={() =>
-                setDialogState((prev) => ({
-                  ...prev,
-                  verify: false,
-                  forgetPassword: true,
-                }))
-              }
-            >
-              Forgot Password
-            </Button>
-          </>
-        )}
-
-        {renderDialog(
-          "email",
-          "Change Email",
-          "Enter your new email address.",
-          <>
-            <Input
-              placeholder="New Email"
-              value={formState.newEmail}
-              onChange={(e) => handleFormChange("newEmail", e.target.value)}
-            />
-            <Button onClick={handleEmailChange} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Update Email
-            </Button>
-          </>
-        )}
-
-        {renderDialog(
-          "otp",
-          "Confirm Email Change",
-          "Enter the OTP sent to your new email address.",
-          <>
-            <Input
-              placeholder="New Email"
-              value={formState.newEmail}
-              readOnly
-            />
-            <Input
-              placeholder="OTP"
-              value={formState.emailOtp}
-              onChange={(e) => handleFormChange("emailOtp", e.target.value)}
-            />
-            <Button onClick={handleConfirmEmailChange} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Change Email
-            </Button>
-          </>
-        )}
-
-        {renderDialog(
-          "password",
-          "Change Password",
-          "Enter your new password.",
-          <>
-            <Input
-              type="password"
-              placeholder="New Password"
-              value={formState.newPassword}
-              onChange={(e) => handleFormChange("newPassword", e.target.value)}
-            />
-            <Button onClick={handlePasswordChange} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Update Password
-            </Button>
-          </>
-        )}
-
-        {renderDialog(
-          "forgetPassword",
-          "Forgot Password",
-          "Enter your email to receive a password reset link.",
-          <>
-            <Input
-              placeholder="Email"
-              value={formState.forgetPasswordEmail}
-              onChange={(e) =>
-                handleFormChange("forgetPasswordEmail", e.target.value)
-              }
-            />
-            <Button
-              onClick={handleSendForgetPasswordEmail}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Send Reset Email
-            </Button>
-          </>
-        )}
-
-        {renderDialog(
-          "newPassword",
-          "Reset Password",
-          "Enter your new password and the OTP sent to your email.",
-          <>
-            <Input
-              type="password"
-              placeholder="New Password"
-              value={formState.newPasswordForReset}
-              onChange={(e) =>
-                handleFormChange("newPasswordForReset", e.target.value)
-              }
-            />
-            <Input
-              placeholder="OTP"
-              value={formState.otp}
-              onChange={(e) => handleFormChange("otp", e.target.value)}
-            />
-            <Button onClick={handleChangePassword} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
-              Change Password
-            </Button>
-          </>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
+  return <NotImplementedNotice title="Account" />;
 };
 
 interface Address {
@@ -930,6 +326,9 @@ const OrderContent: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState("Pending");
   const [isLoading, setIsLoading] = useState(true);
+  const [reversalReason, setReversalReason] = useState("");
+  const [isReversalModalOpen, setIsReversalModalOpen] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState("");
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -938,7 +337,28 @@ const OrderContent: React.FC = () => {
         const response = await get<Order[]>(
           `/order/${activeTab.toLowerCase()}`
         );
-        setOrders(response);
+        console.log(response);
+
+        // Map the response to match the expected Order interface
+        const mappedOrders = response.map((order: any) => ({
+          _id: order._id,
+          product_id: order.product_id,
+          quantity: order.quantity,
+          sku: order.sku || "",
+          total_amount: order.total_amount,
+          shipping_fee: order.shipping_fee || 0,
+          shipping_address: order.shipping_address,
+          customer_id: order.customer_id,
+          seller_id: order.seller_id || "",
+          order_status: order.order_status,
+          created_at: order.created_at || new Date().toISOString(),
+          sku_name: order.sku_name || "",
+          product_image: order.product_image,
+          product_name: order.product_name,
+          product_address: order.product_address || "",
+        }));
+
+        setOrders(mappedOrders);
       } catch (error) {
         console.error("Error fetching orders:", error);
       } finally {
@@ -1016,10 +436,69 @@ const OrderContent: React.FC = () => {
               {order.shipping_address} → {order.product_address}
             </p>
           </div>
+          {activeTab === "Accepted" && (
+            <div className="mt-4">
+              <Dialog
+                open={isReversalModalOpen}
+                onOpenChange={setIsReversalModalOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full bg-red-500 hover:bg-red-600 text-white"
+                    onClick={() => setCurrentOrderId(order._id)}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reversal Order
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-gray-800 text-gray-100">
+                  <DialogHeader>
+                    <DialogTitle>Reversal Order</DialogTitle>
+                  </DialogHeader>
+                  <Textarea
+                    placeholder="Enter reason for reversal"
+                    value={reversalReason}
+                    onChange={(e) => setReversalReason(e.target.value)}
+                    className="mt-4 bg-gray-700 text-gray-100"
+                  />
+                  <div className="flex justify-end mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsReversalModalOpen(false)}
+                      className="mr-2"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button onClick={handleReversalSubmit}>
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Submit Reversal
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          )}
         </CardContent>
       </Card>
     </motion.div>
   );
+
+  const handleReversalSubmit = async () => {
+    try {
+      console.log(currentOrderId);
+      await post(`/reversal/${currentOrderId}`, { reason: reversalReason });
+
+      const response = await get<Order[]>(`/order/${activeTab.toLowerCase()}`);
+      setOrders(response);
+      setIsReversalModalOpen(false);
+      setReversalReason("");
+    } catch (error) {
+      console.error("Error submitting reversal:", error);
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 bg-background_secondary text-gray-100">

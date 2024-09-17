@@ -69,12 +69,17 @@ interface Product {
 
 interface Feedback {
   _id: string;
-  user_id: string;
+  customer_id: string;
   username: string;
   rating: number;
   comment: string;
   images: string[];
   createdAt: string;
+  reply?: {
+    comment: string;
+    created_at: string;
+    updated_at: string;
+  };
 }
 
 interface ProductRating {
@@ -156,6 +161,7 @@ export default function ProductPage() {
         setFeedbacks(feedbacksResponse);
         setUserRating(0);
         setUserComment("");
+        setFeedbackImages([]);
         toast.success("Feedback submitted successfully");
       } catch (error) {
         console.error("Error submitting feedback:", error);
@@ -582,7 +588,7 @@ const FeedbackSection: React.FC<{
                   "{feedbacks[0]?.comment.slice(0, 50)}..."
                 </p>
               </div>
-              <div className="bg-red_background_opacity p-3 rounded-lg border border-red-700">
+              <div className="bg-red_backgr ound_opacity p-3 rounded-lg border border-red-700">
                 <p className="text-red-400 font-medium">
                   Most Helpful Critical
                 </p>
@@ -610,21 +616,23 @@ const FeedbackSection: React.FC<{
             </div>
           </div>
         </div>
-        <div className="bg-background p-4 rounded-lg">
-          <h3 className="text-xl font-semibold mb-4">Write Your Review</h3>
-          <div className="space-y-4">
+        <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+          <h3 className="text-2xl font-semibold mb-6 text-purple-400">
+            Write Your Review
+          </h3>
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-base text-gray-300 mb-2">
                 Rating
               </label>
-              <div className="flex items-center">
+              <div className="flex items-center space-x-2">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`h-6 w-6 cursor-pointer ${
+                    className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
                       star <= userRating
                         ? "text-yellow-400 fill-current"
-                        : "text-gray-300"
+                        : "text-gray-600 hover:text-gray-400"
                     }`}
                     onClick={() => setUserRating(star)}
                   />
@@ -634,7 +642,7 @@ const FeedbackSection: React.FC<{
             <div>
               <label
                 htmlFor="comment"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-300 mb-2"
               >
                 Comment
               </label>
@@ -643,12 +651,12 @@ const FeedbackSection: React.FC<{
                 value={userComment}
                 onChange={(e) => setUserComment(e.target.value)}
                 rows={4}
-                placeholder="Write your review here..."
-                className="w-full"
+                placeholder="Share your thoughts about the product..."
+                className="w-full bg-gray-700 text-gray-200 border-gray-600 focus:border-purple-500 focus:ring-purple-500 rounded-md shadow-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Images (optional)
               </label>
               <ImageUpload
@@ -658,60 +666,128 @@ const FeedbackSection: React.FC<{
                 setImages={setFeedbackImages}
               />
             </div>
-            <Button onClick={handleSubmitFeedback} className="w-full">
-              <Send className="mr-2 h-4 w-4" /> Submit Review
+            <Button
+              onClick={handleSubmitFeedback}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition-colors duration-200"
+            >
+              <Send className="mr-2 h-5 w-5" /> Submit Review
             </Button>
           </div>
         </div>
       </div>
-      <Separator className="my-6" />
-      <div className="space-y-6">
-        {feedbacks.map((feedback) => (
-          <div key={feedback._id} className="bg-background p-4 rounded-lg">
-            <div className="flex items-start space-x-4">
-              <Avatar>
-                <AvatarImage
-                  src={`https://api.dicebear.com/6.x/initials/svg?seed=${feedback.username}`}
-                />
-                <AvatarFallback>{feedback.username.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-grow">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold">{feedback.username}</p>
-                  <div className="flex items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-4 w-4 ${
-                          star <= feedback.rating
-                            ? "text-yellow-400 fill-current"
-                            : "text-gray-300"
-                        }`}
-                      />
-                    ))}
+      <Separator className="my-6 " />
+      <div className=" flex justify-center gap-4">
+        <div className="flex-1">
+          {feedbacks.map((feedback) => (
+            <div key={feedback._id} className="bg-background p-4 rounded-lg">
+              <div className="flex items-start space-x-4">
+                <Avatar>
+                  <AvatarImage
+                    src={`https://api.dicebear.com/6.x/initials/svg?seed=${feedback.username}`}
+                  />
+                  <AvatarFallback>{feedback.username.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-grow">
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold">{feedback.username}</p>
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-4 w-4 ${
+                            star <= feedback.rating
+                              ? "text-yellow-400 fill-current"
+                              : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">{feedback.comment}</p>
-                {feedback.images && feedback.images.length > 0 && (
-                  <div className="mt-3 flex space-x-2">
-                    {feedback.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={image}
-                        alt={`Feedback image ${index + 1}`}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                    ))}
+                  <p className="text-sm text-gray-600 mt-2">
+                    {feedback.comment}
+                  </p>
+                  {feedback.images && feedback.images.length > 0 && (
+                    <div className="mt-3 flex space-x-2">
+                      {feedback.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image}
+                          alt={`Feedback image ${index + 1}`}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center mt-2 text-xs text-gray-400">
+                    <Calendar className="mr-1 h-3 w-3" />
+                    {new Date(feedback.createdAt).toLocaleDateString()}
                   </div>
-                )}
-                <div className="flex items-center mt-2 text-xs text-gray-400">
-                  <Calendar className="mr-1 h-3 w-3" />
-                  {new Date(feedback.createdAt).toLocaleDateString()}
+                  {feedback.reply && (
+                    <div className="mt-4 bg-background_secondary p-3 rounded">
+                      <p className="text-sm font-semibold">Seller's Reply:</p>
+                      <p className="text-sm mt-1">{feedback.reply.comment}</p>
+                      <div className="flex items-center mt-2 text-xs text-gray-400">
+                        <Calendar className="mr-1 h-3 w-3" />
+                        {new Date(
+                          feedback.reply.created_at
+                        ).toLocaleDateString()}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+        <div className="flex-2 bg-background p-4 rounded-lg">
+          <h3 className="text-xl font-semibold mb-4">Product Insights</h3>
+          <div className="space-y-4">
+            <div className="bg-blue_background_opacity p-3 rounded-lg">
+              <h4 className="text-blue-400 font-medium mb-2">
+                Popular Keywords
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {["Quality", "Durable", "Comfortable", "Stylish", "Value"].map(
+                  (keyword) => (
+                    <Badge
+                      key={keyword}
+                      variant="secondary"
+                      className="bg-blue-200 text-blue-800"
+                    >
+                      {keyword}
+                    </Badge>
+                  )
+                )}
+              </div>
+            </div>
+            <div className="bg-green_background_opacity p-3 rounded-lg">
+              <h4 className="text-green-400 font-medium mb-2">
+                Buyer Demographics
+              </h4>
+              <ul className="text-sm space-y-1 text-gray-300">
+                <li>👥 Most common age group: 25-34</li>
+                <li>🌍 Top locations: New York, London, Tokyo</li>
+                <li>💼 Popular occupations: Professionals, Students</li>
+              </ul>
+            </div>
+            <div className="bg-purple_background_opacity p-3 rounded-lg">
+              <h4 className="text-purple-400 font-medium mb-2">Usage Trends</h4>
+              <ul className="text-sm space-y-1 text-gray-300">
+                <li>📈 85% use the product weekly</li>
+                <li>🔄 60% are repeat customers</li>
+                <li>🎁 Often purchased as a gift</li>
+              </ul>
+            </div>
+            <div className="bg-orange_background_opacity p-3 rounded-lg">
+              <h4 className="text-orange-400 font-medium mb-2">Comparison</h4>
+              <ul className="text-sm space-y-1 text-gray-300">
+                <li>⚖️ 20% better durability than competitors</li>
+                <li>💰 15% more affordable than market average</li>
+                <li>🌟 Top 5% in customer satisfaction</li>
+              </ul>
+            </div>
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
