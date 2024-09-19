@@ -54,7 +54,8 @@ const ProductActionSidebar: React.FC = () => {
       setError(null);
       try {
         const data = await getPublic<Product>(
-          `/product/by-product/${productId}`
+          `/product/by-product/${productId}`,
+          "product"
         );
 
         setProduct(data);
@@ -111,8 +112,7 @@ const ProductActionSidebar: React.FC = () => {
     };
 
     try {
-      const response = await post<{ message: string }>("/cart", cartData);
-      console.log("Product added to cart:", response.message);
+      await post<{ message: string }>("/cart", "order", cartData);
       toast.success("Product added to cart successfully");
       setTimeout(closeProductActionSidebar, 1000);
     } catch (error) {
@@ -133,6 +133,7 @@ const ProductActionSidebar: React.FC = () => {
     try {
       const session_id = await post<{ message: string }>(
         "/session",
+        "other",
         checkoutSessionData
       );
       toast.success("Checkout session created successfully");

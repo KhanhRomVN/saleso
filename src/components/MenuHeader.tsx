@@ -23,7 +23,10 @@ const MenuHeader: React.FC = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await getPublic<Category[]>("/category/level/1");
+        const response = await getPublic<Category[]>(
+          "/category/level/1",
+          "product"
+        );
         setCategories(response);
       } catch (error) {
         console.error("Error fetching categories:", error);

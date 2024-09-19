@@ -110,7 +110,8 @@ export default function ProductPage() {
   const fetchData = useCallback(async () => {
     try {
       const productResponse = await getPublic<Product>(
-        `/product/by-product/${product_id}`
+        `/product/by-product/${product_id}`,
+        "product"
       );
       setProduct(productResponse);
     } catch (err) {
@@ -129,8 +130,14 @@ export default function ProductPage() {
       if (product) {
         try {
           const [ratingResponse, feedbacksResponse] = await Promise.all([
-            getPublic<ProductRating>(`/feedback/product/${product._id}/rating`),
-            getPublic<Feedback[]>(`/feedback/product/${product._id}`),
+            getPublic<ProductRating>(
+              `/feedback/product/${product._id}/rating`,
+              "product"
+            ),
+            getPublic<Feedback[]>(
+              `/feedback/product/${product._id}`,
+              "product"
+            ),
           ]);
           setProductRating(ratingResponse);
           setFeedbacks(feedbacksResponse);
@@ -146,7 +153,7 @@ export default function ProductPage() {
   const handleSubmitFeedback = async () => {
     if (product) {
       try {
-        await post("/feedback", {
+        await post("/feedback", "product", {
           product_id: product._id,
           rating: userRating,
           comment: userComment,
@@ -154,8 +161,11 @@ export default function ProductPage() {
         });
         // Refetch rating and feedbacks after submission
         const [ratingResponse, feedbacksResponse] = await Promise.all([
-          getPublic<ProductRating>(`/feedback/product/${product._id}/rating`),
-          getPublic<Feedback[]>(`/feedback/product/${product._id}`),
+          getPublic<ProductRating>(
+            `/feedback/product/${product._id}/rating`,
+            "product"
+          ),
+          getPublic<Feedback[]>(`/feedback/product/${product._id}`, "product"),
         ]);
         setProductRating(ratingResponse);
         setFeedbacks(feedbacksResponse);
@@ -286,7 +296,7 @@ const ProductDetails: React.FC<{
 
   const handleAddToWishlist = useCallback(async () => {
     try {
-      await post(`/wishlist/items/${product._id}`);
+      await post(`/wishlist/items/${product._id}`, "order");
       toast.success("Added to wishlist successfully");
     } catch (error) {
       console.error("Error adding to wishlist:", error);

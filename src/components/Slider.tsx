@@ -14,9 +14,12 @@ interface SliderItem {
   path: string;
 }
 
+type ServiceAPI = "user" | "order" | "product" | "analytics" | "other";
+
 interface SliderProps {
   api: string;
   body?: Record<string, unknown>;
+  service: ServiceAPI;
   itemPerSlide?: number;
   itemPerSlideTablet?: number;
   itemPerSlideDesktop?: number;
@@ -27,6 +30,7 @@ interface SliderProps {
 
 const Slider: React.FC<SliderProps> = ({
   api,
+  service,
   body = {},
   itemPerSlide = 1,
   itemPerSlideTablet,
@@ -41,7 +45,11 @@ const Slider: React.FC<SliderProps> = ({
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const response = await postPublic<{ images: SliderItem[] }>(api, body);
+        const response = await postPublic<{ images: SliderItem[] }>(
+          api,
+          service,
+          body
+        );
         setItems(response.images);
       } catch (error) {
         console.error("Error fetching slider items:", error);

@@ -56,8 +56,8 @@ const CartPage: React.FC = () => {
 
   const fetchCartData = async () => {
     try {
-      const response = await get<CartData>(`/cart`);
-      setCartData(response);
+      const data = await get<CartData>(`/cart`, "order");
+      setCartData(data);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching cart data:", error);
@@ -70,7 +70,7 @@ const CartPage: React.FC = () => {
     newQuantity: number
   ) => {
     try {
-      await put(`/cart/quantity`, {
+      await put(`/cart/quantity`, "order", {
         product_id: productId,
         quantity: newQuantity,
       });
@@ -82,7 +82,7 @@ const CartPage: React.FC = () => {
 
   const handleSkuChange = async (productId: string, newSku: string) => {
     try {
-      await put(`/cart/sku`, { product_id: productId, sku: newSku });
+      await put(`/cart/sku`, "order", { product_id: productId, sku: newSku });
       fetchCartData();
     } catch (error) {
       console.error("Error updating SKU:", error);
@@ -91,7 +91,7 @@ const CartPage: React.FC = () => {
 
   const handleClearCart = async () => {
     try {
-      await del(`/cart`);
+      await del(`/cart`, "order");
       fetchCartData();
     } catch (error) {
       console.error("Error clearing cart:", error);
@@ -132,6 +132,7 @@ const CartPage: React.FC = () => {
 
     const session_id = await post<{ session_id: any }>(
       "/session",
+      "other",
       selectedItems
     );
     navigate(`/checkout/${session_id}`);
@@ -207,7 +208,9 @@ const CartPage: React.FC = () => {
                             <TableCell>
                               <Checkbox
                                 className="bg-white"
-                                checked={selectedItems.includes(item.product_id)}
+                                checked={selectedItems.includes(
+                                  item.product_id
+                                )}
                                 onCheckedChange={() =>
                                   toggleItemSelection(item.product_id)
                                 }
@@ -287,7 +290,8 @@ const CartPage: React.FC = () => {
                                     )
                                   }
                                   disabled={
-                                    item.quantity >= (selectedVariant?.stock || 0)
+                                    item.quantity >=
+                                    (selectedVariant?.stock || 0)
                                   }
                                 >
                                   <Plus size={16} />
@@ -327,7 +331,8 @@ const CartPage: React.FC = () => {
                   </CardContent>
                 </Card>
                 <p className="text-xs text-gray-600 mt-2">
-                  (This total amount does not include discounts or delivery fees)
+                  (This total amount does not include discounts or delivery
+                  fees)
                 </p>
               </div>
             </div>

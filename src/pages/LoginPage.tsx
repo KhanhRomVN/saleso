@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast, Toaster } from "react-hot-toast";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,7 @@ const LoginPage: React.FC = () => {
 
   const handleLogin = async () => {
     try {
-      const data = await postPublic("/auth/login", {
+      const data = await postPublic("/auth/login", "user", {
         ...credentials,
         role: "customer",
       });
@@ -55,7 +56,7 @@ const LoginPage: React.FC = () => {
 
   const handleForgotPassword = async () => {
     try {
-      await postPublic("/user/forget/password", {
+      await postPublic("/user/forget/password", "user", {
         email: forgotPasswordEmail,
         role: "customer",
       });
@@ -69,7 +70,11 @@ const LoginPage: React.FC = () => {
 
   const handleResetPassword = async () => {
     try {
-      await postPublic("/user/update/forget-password", resetPasswordData);
+      await postPublic(
+        "/user/update/forget-password",
+        "user",
+        resetPasswordData
+      );
       toast.success("Password reset successful!");
       window.location.reload();
     } catch (error) {
@@ -100,7 +105,9 @@ const LoginPage: React.FC = () => {
             alt="logo"
             className="h-8 sm:h-10 mx-auto object-contain"
           />
-          <h2 className="text-xl sm:text-2xl text-center font-bold">Welcome to Saleso!</h2>
+          <h2 className="text-xl sm:text-2xl text-center font-bold">
+            Welcome to Saleso!
+          </h2>
           <p className="text-xs sm:text-sm text-center text-gray-600">
             Please enter your email and password to login
           </p>
@@ -232,7 +239,7 @@ const LoginPage: React.FC = () => {
           </Dialog>
         </div>
       </motion.div>
-      <Toaster position="top-center" reverseOrder={false} />
+      <ToastContainer position="top-center" />
     </motion.div>
   );
 };

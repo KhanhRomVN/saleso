@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,12 +7,10 @@ import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -21,21 +19,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
-import Cropper, { Area } from "react-easy-crop";
-import {
-  handleImageSelect,
-  cropImageFile,
-  handleUploadCroppedImage,
-} from "@/utils/imageUtils";
-import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import {
-  User,
-  Mail,
-  Lock,
-  Camera,
-  Info,
-  Loader2,
   Package,
   CheckCircle,
   XCircle,
@@ -53,7 +38,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { get, post, put } from "@/utils/authUtils";
+import { get, post } from "@/utils/authUtils";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -335,7 +320,8 @@ const OrderContent: React.FC = () => {
       setIsLoading(true);
       try {
         const response = await get<Order[]>(
-          `/order/${activeTab.toLowerCase()}`
+          `/order/${activeTab.toLowerCase()}`,
+          "order"
         );
         console.log(response);
 
@@ -356,6 +342,8 @@ const OrderContent: React.FC = () => {
           product_image: order.product_image,
           product_name: order.product_name,
           product_address: order.product_address || "",
+          reversal_reason: order.reversal_reason || "",
+          reversal_status: order.reversal_status || "",
         }));
 
         setOrders(mappedOrders);
@@ -373,6 +361,7 @@ const OrderContent: React.FC = () => {
       Pending: <Package className="w-6 h-6 text-yellow-500" />,
       Accepted: <CheckCircle className="w-6 h-6 text-green-500" />,
       Refused: <XCircle className="w-6 h-6 text-red-500" />,
+      Reversed: <RotateCcw className="w-6 h-6 text-blue-500" />, // Added Reversed status icon
     }),
     []
   );
@@ -489,9 +478,14 @@ const OrderContent: React.FC = () => {
   const handleReversalSubmit = async () => {
     try {
       console.log(currentOrderId);
-      await post(`/reversal/${currentOrderId}`, { reason: reversalReason });
+      await post(`/reversal/${currentOrderId}`, "order", {
+        reason: reversalReason,
+      });
 
-      const response = await get<Order[]>(`/order/${activeTab.toLowerCase()}`);
+      const response = await get<Order[]>(
+        `/order/${activeTab.toLowerCase()}`,
+        "order"
+      );
       setOrders(response);
       setIsReversalModalOpen(false);
       setReversalReason("");
@@ -507,7 +501,9 @@ const OrderContent: React.FC = () => {
         onValueChange={setActiveTab}
         className="w-full"
       >
-        <TabsList className="grid w-full grid-cols-3 mb-8 bg-gray-800">
+        <TabsList className="grid w-full grid-cols-4 mb-8 bg-gray-800">
+          {" "}
+          {/* Changed grid-cols-3 to grid-cols-4 */}
           {Object.keys(statusIcons).map((status) => (
             <TabsTrigger
               key={status}
@@ -542,7 +538,13 @@ const OrderContent: React.FC = () => {
               <AnimatePresence>
                 <div className="space-y-4">
                   {orders.length > 0 ? (
-                    orders.map(renderOrderCard)
+                    orders
+                      .filter(
+                        (order) =>
+                          order.order_status.toLowerCase() ===
+                          activeTab.toLowerCase()
+                      ) // Filter orders based on activeTab
+                      .map(renderOrderCard)
                   ) : (
                     <p className="text-center text-gray-400">
                       No {status.toLowerCase()} orders found.

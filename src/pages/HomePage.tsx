@@ -20,6 +20,7 @@ function HomePage() {
       <div className="flex flex-col gap-4">
         <Slider
           api="/gallery/filter"
+          service="other"
           body={mainBannerBody}
           itemPerSlide={1}
           noActionArrow={true}
@@ -27,6 +28,7 @@ function HomePage() {
         <p className="text-xl font-semibold">Top Categories</p>
         <Slider
           api="/gallery/filter"
+          service="other"
           body={categoryBody}
           itemPerSlide={2}
           itemPerSlideTablet={3}

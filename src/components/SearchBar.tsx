@@ -14,9 +14,13 @@ const SearchBar: React.FC = () => {
   const fetchSearchResults = useCallback(async (query: string) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const response = await postPublic<any>("/product/elastic/search", { 
-        value: query,
-      });
+      const response = await postPublic<any>(
+        "/product/elastic/search",
+        "product",
+        {
+          value: query,
+        }
+      );
       setSearchResults(response);
       setIsSearchResultVisible(true);
     } catch (error) {

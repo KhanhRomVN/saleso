@@ -49,7 +49,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(
       async (e: React.MouseEvent) => {
         e.stopPropagation();
         try {
-          await post(`/wishlist/items/${productData.id}`);
+          await post(`/wishlist/items/${productData.id}`, "order");
           toast.success("Added to wishlist successfully");
         } catch (error) {
           console.error("Error adding to wishlist:", error);

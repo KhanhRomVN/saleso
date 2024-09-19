@@ -54,7 +54,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
       setLoading(true);
       try {
         if (api) {
-          const response = await postPublic<Product[]>(api);
+          const response = await postPublic<Product[]>(api, "product");
           setProducts(response);
         } else if (productList) {
           setProducts(productList);

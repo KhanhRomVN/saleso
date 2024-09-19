@@ -44,7 +44,7 @@ export default function SearchPage() {
         total: number;
         page: number;
         limit: number;
-      }>("/product/elastic/filter", { value, ...filters });
+      }>("/product/elastic/filter", "product", { value, ...filters });
 
       if (response.products.length === 0) {
         toast.warning(

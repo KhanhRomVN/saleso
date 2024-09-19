@@ -1,16 +1,36 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ToastContainer, toast } from 'react-toastify';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from "@/components/ui/select"
-import {Button} from "@/components/ui/button"
-import { ShoppingCart, Truck, CreditCard, Tag, Percent, DollarSign, Clock } from 'lucide-react';
-import { authUtils } from '@/utils/authUtils';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { ToastContainer, toast } from "react-toastify";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  ShoppingCart,
+  Truck,
+  CreditCard,
+  Tag,
+  Percent,
+  DollarSign,
+  Clock,
+} from "lucide-react";
+import { authUtils } from "@/utils/authUtils";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Progress } from '@/components/ui/progress';
+import { Progress } from "@/components/ui/progress";
 
 interface Variant {
   sku: string;
@@ -42,7 +62,9 @@ interface CheckoutItem {
 }
 
 interface SessionResponse {
-  data: { product_id: string; selected_sku: string; quantity: number } | string[];
+  data:
+    | { product_id: string; selected_sku: string; quantity: number }
+    | string[];
 }
 
 interface CartResponse {
@@ -73,7 +95,8 @@ const CheckoutPage: React.FC = () => {
       try {
         setIsLoading(true);
         const response = await authUtils.get<SessionResponse>(
-          `/session/get/${session_id}`
+          `/session/get/${session_id}`,
+          "other"
         );
 
         let processedData: CheckoutItem[] = [];
@@ -82,9 +105,13 @@ const CheckoutPage: React.FC = () => {
           processedData = await Promise.all(
             response.data.map(async (product_id) => {
               const [cartResponse, productResponse] = await Promise.all([
-                authUtils.get<CartResponse>(`/cart/by-product/${product_id}`),
+                authUtils.get<CartResponse>(
+                  `/cart/by-product/${product_id}`,
+                  "order"
+                ),
                 authUtils.get<ProductResponse>(
-                  `/product/by-product/${product_id}`
+                  `/product/by-product/${product_id}`,
+                  "product"
                 ),
               ]);
 
@@ -104,16 +131,17 @@ const CheckoutPage: React.FC = () => {
           );
         } else {
           const productResponse = await authUtils.get<ProductResponse>(
-            `/product/by-product/${response.data.product_id}`
+            `/product/by-product/${response.data.product_id}`,
+            "product"
           );
-          const selectedSku = 'selected_sku' in response.data ? response.data.selected_sku : '';
+          const selectedSku =
+            "selected_sku" in response.data ? response.data.selected_sku : "";
           processedData.push({
             ...response.data,
             ...productResponse,
             price:
-              productResponse.variants.find(
-                (v) => v.sku === selectedSku
-              )?.price || 0,
+              productResponse.variants.find((v) => v.sku === selectedSku)
+                ?.price || 0,
             discounts: [],
             appliedDiscount: null,
             applied_discount: null,
@@ -124,7 +152,9 @@ const CheckoutPage: React.FC = () => {
         calculateTotal(processedData);
       } catch (error) {
         console.error("Error fetching checkout data:", error);
-        toast.error("Failed to load checkout data. Redirecting to home page...");
+        toast.error(
+          "Failed to load checkout data. Redirecting to home page..."
+        );
         navigate("/");
       } finally {
         setIsLoading(false);
@@ -147,7 +177,8 @@ const CheckoutPage: React.FC = () => {
     try {
       const product = checkoutData[index];
       const response = await authUtils.get<Discount[]>(
-        `/product/by-product-with-discount/${product.product_id}`
+        `/product/by-product-with-discount/${product.product_id}`,
+        "product"
       );
       const updatedCheckoutData = [...checkoutData];
       updatedCheckoutData[index].discounts = response;
@@ -209,16 +240,14 @@ const CheckoutPage: React.FC = () => {
         shipping_address: shippingAddress,
       };
 
-
-
       toast.success("Order placed successfully!");
-      
+
       if (paymentMethod === "prepaid") {
-        await authUtils.post("/order", orderData);
-        await authUtils.get(`/session/clean/${session_id}`);
+        await authUtils.post("/order", "order", orderData);
+        await authUtils.get(`/session/clean/${session_id}`, "other");
         navigate("/order-success");
       } else {
-        const session_id = await authUtils.post("/session", orderData);
+        const session_id = await authUtils.post("/session", "other", orderData);
         navigate(`/payment/${session_id}`);
       }
     } catch (error) {
@@ -251,8 +280,8 @@ const CheckoutPage: React.FC = () => {
     >
       <ToastContainer position="top-right" autoClose={3000} />
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
-      <div className={`flex ${isDesktop ? 'flex-row' : 'flex-col'} gap-8`}>
-        <div className={`w-full ${isDesktop ? 'lg:w-2/3' : ''}`}>
+      <div className={`flex ${isDesktop ? "flex-row" : "flex-col"} gap-8`}>
+        <div className={`w-full ${isDesktop ? "lg:w-2/3" : ""}`}>
           <Card className="mb-8 bg-background_secondary">
             <CardHeader>
               <CardTitle className="text-2xl font-bold flex items-center">
@@ -276,7 +305,7 @@ const CheckoutPage: React.FC = () => {
           </Card>
         </div>
 
-        <div className={`w-full ${isDesktop ? 'lg:w-1/3' : ''}`}>
+        <div className={`w-full ${isDesktop ? "lg:w-1/3" : ""}`}>
           <OrderSummary
             shippingAddress={shippingAddress}
             setShippingAddress={setShippingAddress}
@@ -312,12 +341,8 @@ const CheckoutItem: React.FC<{
       />
       <div className="flex-grow">
         <h3 className="text-lg font-semibold">{item.name}</h3>
-        <p className="text-sm text-gray-600">
-          Quantity: {item.quantity}
-        </p>
-        <p className="text-sm font-medium">
-          Price: ${item.price.toFixed(2)}
-        </p>
+        <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+        <p className="text-sm font-medium">Price: ${item.price.toFixed(2)}</p>
         <DiscountDialog
           item={item}
           index={index}
@@ -352,9 +377,7 @@ const OrderSummary: React.FC<{
 }) => (
   <Card className="bg-background_secondary">
     <CardHeader>
-      <CardTitle className="text-2xl font-bold">
-        Order Summary
-      </CardTitle>
+      <CardTitle className="text-2xl font-bold">Order Summary</CardTitle>
     </CardHeader>
     <CardContent className="space-y-6">
       <div>
@@ -442,7 +465,7 @@ const DiscountDialog: React.FC<DiscountDialogProps> = ({
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w">
-      <DialogHeader>
+        <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
             Available Discounts
           </DialogTitle>

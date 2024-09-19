@@ -42,7 +42,7 @@ const WishlistPage: React.FC = () => {
 
   const fetchWishlist = async () => {
     try {
-      const data = await get<Product[]>("/wishlist");
+      const data = await get<Product[]>("/wishlist", "order");
       setWishlistItems(data);
     } catch (error) {
       console.error("Error fetching wishlist:", error);
@@ -57,7 +57,7 @@ const WishlistPage: React.FC = () => {
 
   const handleRemoveFromWishlist = async (productId: string) => {
     try {
-      await del(`/wishlist/items/${productId}`);
+      await del(`/wishlist/items/${productId}`, "order");
       setWishlistItems(wishlistItems.filter((item) => item._id !== productId));
     } catch (error) {
       console.error("Error removing item from wishlist:", error);
@@ -66,7 +66,7 @@ const WishlistPage: React.FC = () => {
 
   const handleClearWishlist = async () => {
     try {
-      await del("/wishlist");
+      await del("/wishlist", "order");
       setWishlistItems([]);
     } catch (error) {
       console.error("Error clearing wishlist:", error);

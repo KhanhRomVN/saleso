@@ -36,7 +36,7 @@ const RegisterPage: React.FC = () => {
 
   const handleEmailSubmit = async () => {
     try {
-      await postPublic("/auth/email-verify", {
+      await postPublic("/auth/email-verify", "user", {
         email,
         role: "customer",
       });
@@ -58,7 +58,7 @@ const RegisterPage: React.FC = () => {
 
   const handleOTPSubmit = async () => {
     try {
-      const response = await postPublic("/auth/register-otp", {
+      const response = await postPublic("/auth/register-otp", "user", {
         email,
         otp,
         username,
@@ -74,7 +74,7 @@ const RegisterPage: React.FC = () => {
 
   const handleDetailsSubmit = async () => {
     try {
-      await postPublic("/user/create/user-detail/customer", {
+      await postPublic("/user/create/user-detail/customer", "user", {
         customer_id: customerId,
         name,
         age,
@@ -105,7 +105,9 @@ const RegisterPage: React.FC = () => {
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
             Create an account
           </h2>
-          <p className="text-xs sm:text-sm text-gray-600">Experience many new things</p>
+          <p className="text-xs sm:text-sm text-gray-600">
+            Experience many new things
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <Input
@@ -153,7 +155,9 @@ const RegisterPage: React.FC = () => {
           </Button>
         </CardContent>
         <div className="text-center pb-4">
-          <p className="text-xs sm:text-sm text-gray-600">Already have an account?</p>
+          <p className="text-xs sm:text-sm text-gray-600">
+            Already have an account?
+          </p>
           <motion.p
             className="text-xs sm:text-sm text-blue-600 cursor-pointer font-semibold"
             onClick={() => navigate("/login")}
