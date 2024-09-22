@@ -4,8 +4,9 @@ import React, {
   useMemo,
   useCallback,
   useContext,
+  useRef,
 } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Carousel,
   CarouselContent,
@@ -28,7 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { getPublic, post } from "@/utils/authUtils";
+import { getPublic, post, put } from "@/utils/authUtils";
 import { ProductActionSidebarContext } from "@/context/ProductActionSidebarContext";
 import { toast } from "react-toastify";
 import ProductActionSidebar from "@/components/ProductActionSidebar";
@@ -70,26 +71,35 @@ interface Product {
 interface Feedback {
   _id: string;
   customer_id: string;
-  username: string;
+  product_id: string;
+  seller_id: string;
   rating: number;
   comment: string;
   images: string[];
-  createdAt: string;
   reply?: {
     comment: string;
     created_at: string;
     updated_at: string;
   };
+  created_at: string;
+  updated_at: string;
+  username: string;
 }
 
 interface ProductRating {
-  averageRating: number;
   totalReviews: number;
   ratingDistribution: { rating: number; count: number }[];
+  averageRating: number;
+}
+
+interface ProductRatingResponse {
+  message: string;
+  data: ProductRating;
 }
 
 export default function ProductPage() {
   const { product_id } = useParams<{ product_id: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +117,8 @@ export default function ProductPage() {
     threshold: 0.1,
   });
 
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const fetchData = useCallback(async () => {
     try {
       const productResponse = await getPublic<Product>(
@@ -123,14 +135,42 @@ export default function ProductPage() {
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+
+    // Set up refresh after 5 minutes (300000 ms)
+    refreshTimeoutRef.current = setTimeout(() => {
+      navigate(0); // This will cause a full page refresh
+    }, 300000);
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, [fetchData, navigate]);
+
+  useEffect(() => {
+    if (product) {
+      const timer = setTimeout(() => {
+        put(`/product_analytic/visitor/${product._id}`, "analytics", {})
+          .then(() => console.log("Visitor analytics updated"))
+          .catch((error) =>
+            console.error("Error updating visitor analytics:", error)
+          );
+      }, 15000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [product]);
 
   useEffect(() => {
     const fetchRatingAndFeedbacks = async () => {
       if (product) {
         try {
           const [ratingResponse, feedbacksResponse] = await Promise.all([
-            getPublic<ProductRating>(
+            getPublic<ProductRatingResponse>(
               `/feedback/product/${product._id}/rating`,
               "product"
             ),
@@ -139,7 +179,7 @@ export default function ProductPage() {
               "product"
             ),
           ]);
-          setProductRating(ratingResponse);
+          setProductRating(ratingResponse.data);
           setFeedbacks(feedbacksResponse);
         } catch (error) {
           console.error("Error fetching rating and feedbacks:", error);
@@ -598,7 +638,7 @@ const FeedbackSection: React.FC<{
                   "{feedbacks[0]?.comment.slice(0, 50)}..."
                 </p>
               </div>
-              <div className="bg-red_backgr ound_opacity p-3 rounded-lg border border-red-700">
+              <div className="bg-red_background_opacity p-3 rounded-lg border border-red-700">
                 <p className="text-red-400 font-medium">
                   Most Helpful Critical
                 </p>
@@ -689,7 +729,10 @@ const FeedbackSection: React.FC<{
       <div className=" flex justify-center gap-4">
         <div className="flex-1">
           {feedbacks.map((feedback) => (
-            <div key={feedback._id} className="bg-background p-4 rounded-lg">
+            <div
+              key={feedback._id}
+              className="bg-background p-4 rounded-lg mb-4"
+            >
               <div className="flex items-start space-x-4">
                 <Avatar>
                   <AvatarImage
@@ -730,7 +773,7 @@ const FeedbackSection: React.FC<{
                   )}
                   <div className="flex items-center mt-2 text-xs text-gray-400">
                     <Calendar className="mr-1 h-3 w-3" />
-                    {new Date(feedback.createdAt).toLocaleDateString()}
+                    {new Date(feedback.created_at).toLocaleDateString()}
                   </div>
                   {feedback.reply && (
                     <div className="mt-4 bg-background_secondary p-3 rounded">

@@ -38,15 +38,23 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { get, post } from "@/utils/authUtils";
+import { get, post, put } from "@/utils/authUtils";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import NotImplementedNotice from "@/components/NotImplementedNotice";
+import { ErrorDisplay } from "@/components/NotImplementedNotice";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "react-toastify";
 
-type TabId = "account" | "address" | "orders" | "payment" | "message" | "other";
+type TabId =
+  | "account"
+  | "address"
+  | "orders"
+  | "payment"
+  | "notification"
+  | "message"
+  | "other";
 
 const SettingPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>("account");
@@ -56,6 +64,7 @@ const SettingPage: React.FC = () => {
     { id: "address" as const, label: "Address", icon: "🏠" },
     { id: "orders" as const, label: "Orders", icon: "📦" },
     { id: "payment" as const, label: "Payment", icon: "💳" },
+    { id: "notification" as const, label: "Notification", icon: "🔔" },
     { id: "message" as const, label: "Message", icon: "✉️" },
     { id: "other" as const, label: "Other", icon: "⚙️" },
   ];
@@ -65,6 +74,7 @@ const SettingPage: React.FC = () => {
     address: AddressContent,
     orders: OrderContent,
     payment: PaymentContent,
+    notification: NotificationContent,
     message: MessageContent,
     other: OtherContent,
   };
@@ -117,96 +127,522 @@ const SettingPage: React.FC = () => {
 };
 
 const AccountContent: React.FC = () => {
-  return <NotImplementedNotice title="Account" />;
+  const [user, setUser] = useState<any>(null);
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState<any>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isForgettingPassword, setIsForgettingPassword] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [currentEmail, setCurrentEmail] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [forgetPasswordEmail, setForgetPasswordEmail] = useState("");
+  const [newPasswordForReset, setNewPasswordForReset] = useState("");
+  const [resetPasswordOtp, setResetPasswordOtp] = useState("");
+  const [showResetPasswordInputs, setShowResetPasswordInputs] = useState(false);
+  const [verifyPurpose, setVerifyPurpose] = useState<
+    "email" | "password" | null
+  >(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const userData = await get("/user/", "user");
+      const userDetailData = await get("/user/user-detail", "user");
+      setUser(userData);
+      setUserDetail(userDetailData);
+      setEditedUser({ ...userData, ...userDetailData });
+      setCurrentEmail(userData.email);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setError("Failed to load user data. Please try again later.");
+      toast.error("Failed to load user data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditedUser((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await put("/user/update/username", "user", {
+        username: editedUser.username,
+      });
+      await put("/user/update/user-detail", "user", {
+        name: editedUser.name,
+        birthdate: editedUser.birthdate,
+      });
+      setUser((prev: any) => ({ ...prev, username: editedUser.username }));
+      setUserDetail((prev: any) => ({
+        ...prev,
+        name: editedUser.name,
+        birthdate: editedUser.birthdate,
+      }));
+      setIsEditing(false);
+      toast.success("Account information updated successfully");
+    } catch (error) {
+      console.error("Error updating user data:", error);
+      toast.error("Failed to update account information");
+    }
+  };
+
+  const handleVerifyAccount = async () => {
+    try {
+      await post("/auth/verify/account", "user", {
+        email: currentEmail,
+        password: currentPassword,
+      });
+      setIsVerifying(false);
+      if (verifyPurpose === "email") {
+        setIsChangingEmail(true);
+      } else if (verifyPurpose === "password") {
+        setIsChangingPassword(true);
+      }
+      toast.success("Account verified successfully");
+    } catch (error) {
+      console.error("Error verifying account:", error);
+      toast.error("Failed to verify account");
+    }
+  };
+
+  const handleInitiateEmailChange = async () => {
+    try {
+      await put("/user/new-email", "user", { newEmail });
+      toast.success("OTP sent to new email");
+    } catch (error) {
+      console.error("Error initiating email change:", error);
+      toast.error("Failed to initiate email change");
+    }
+  };
+
+  const handleConfirmEmailChange = async () => {
+    try {
+      await put("/user/update/new-email", "user", { newEmail, otp });
+      setUser((prev: any) => ({ ...prev, email: newEmail }));
+      setCurrentEmail(newEmail);
+      setIsChangingEmail(false);
+      setNewEmail("");
+      setOtp("");
+      toast.success("Email updated successfully");
+    } catch (error) {
+      console.error("Error updating email:", error);
+      toast.error("Failed to update email");
+    }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      await put("/user/update/password", "user", { newPassword });
+      setIsChangingPassword(false);
+      setNewPassword("");
+      toast.success("Password updated successfully");
+    } catch (error) {
+      console.error("Error updating password:", error);
+      toast.error("Failed to update password");
+    }
+  };
+
+  const handleSendForgetPasswordEmail = async () => {
+    try {
+      await put("/user/forget/password", "user", {
+        email: forgetPasswordEmail,
+      });
+      setShowResetPasswordInputs(true);
+      toast.success("OTP sent to your email. Please check your inbox.");
+    } catch (error) {
+      console.error("Error sending forget password email:", error);
+      toast.error("Failed to send forget password email");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    try {
+      await put("/user/update/forget-password", "user", {
+        email: forgetPasswordEmail,
+        newPassword: newPasswordForReset,
+        otp: resetPasswordOtp,
+      });
+      setIsForgettingPassword(false);
+      setForgetPasswordEmail("");
+      setNewPasswordForReset("");
+      setResetPasswordOtp("");
+      setShowResetPasswordInputs(false);
+      toast.success("Password has been successfully reset.");
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error("Failed to reset password");
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-blue-400">Loading...</div>;
+  }
+
+  if (error) {
+    return <ErrorDisplay message={error} />;
+  }
+
+  return (
+    <Card className="bg-gray-900 border-gray-800 shadow-lg">
+      <CardHeader className="border-b border-gray-800">
+        <CardTitle className="text-2xl font-bold text-blue-400">
+          Account Information
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6 pt-6">
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="username" className="text-blue-300">
+              Username
+            </Label>
+            <Input
+              id="username"
+              name="username"
+              value={isEditing ? editedUser.username : user.username}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <Label htmlFor="email" className="text-blue-300">
+              Email
+            </Label>
+            <Input
+              id="email"
+              value={user.email}
+              disabled
+              className="bg-gray-800 border-gray-700 text-blue-100"
+            />
+          </div>
+          <Separator className="bg-gray-800" />
+          <div>
+            <Label htmlFor="name" className="text-blue-300">
+              Full Name
+            </Label>
+            <Input
+              id="name"
+              name="name"
+              value={isEditing ? editedUser.name : userDetail.name}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <Label htmlFor="birthdate" className="text-blue-300">
+              Birthdate
+            </Label>
+            <Input
+              id="birthdate"
+              name="birthdate"
+              type="date"
+              value={isEditing ? editedUser.birthdate : userDetail.birthdate}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+            />
+          </div>
+        </div>
+        <div className=" mt-6 flex items-center justify-between gap-4">
+          <Button
+            onClick={() => {
+              setIsVerifying(true);
+              setVerifyPurpose("email");
+            }}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
+          >
+            Change Email
+          </Button>
+          <Button
+            onClick={() => {
+              setIsVerifying(true);
+              setVerifyPurpose("password");
+            }}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white transition-colors duration-300"
+          >
+            Change Password
+          </Button>
+        </div>
+
+        <Dialog open={isVerifying} onOpenChange={setIsVerifying}>
+          <DialogContent className="bg-gray-900 text-blue-100">
+            <DialogHeader>
+              <DialogTitle className="text-blue-400">
+                Verify Account
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Current Email"
+                value={currentEmail}
+                onChange={(e) => setCurrentEmail(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+              />
+              <Input
+                type="password"
+                placeholder="Current Password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+              />
+              <Button
+                onClick={handleVerifyAccount}
+                className="w-full bg-green-600 hover:bg-green-700 text-white transition-colors duration-300"
+              >
+                Verify Account
+              </Button>
+              <Button
+                variant="link"
+                onClick={() => {
+                  setIsVerifying(false);
+                  setIsForgettingPassword(true);
+                }}
+                className="text-blue-400 hover:text-blue-300"
+              >
+                Forget Password?
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isChangingEmail} onOpenChange={setIsChangingEmail}>
+          <DialogContent className="bg-gray-900 text-blue-100">
+            <DialogHeader>
+              <DialogTitle className="text-blue-400">Change Email</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="New Email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+              />
+              <Button
+                onClick={handleInitiateEmailChange}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
+              >
+                Send OTP
+              </Button>
+              <Input
+                placeholder="OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+              />
+              <Button
+                onClick={handleConfirmEmailChange}
+                className="w-full bg-green-600 hover:bg-green-700 text-white transition-colors duration-300"
+              >
+                Confirm Change
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isChangingPassword} onOpenChange={setIsChangingPassword}>
+          <DialogContent className="bg-gray-900 text-blue-100">
+            <DialogHeader>
+              <DialogTitle className="text-blue-400">
+                Change Password
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                type="password"
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+              />
+              <Button
+                onClick={handleChangePassword}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white transition-colors duration-300"
+              >
+                Change Password
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={isForgettingPassword}
+          onOpenChange={setIsForgettingPassword}
+        >
+          <DialogContent className="bg-gray-900 text-blue-100">
+            <DialogHeader>
+              <DialogTitle className="text-blue-400">
+                Forget Password
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Input
+                placeholder="Email"
+                value={forgetPasswordEmail}
+                onChange={(e) => setForgetPasswordEmail(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+              />
+              <Button
+                onClick={handleSendForgetPasswordEmail}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
+              >
+                Send Reset Email
+              </Button>
+              {showResetPasswordInputs && (
+                <>
+                  <Input
+                    type="password"
+                    placeholder="New Password"
+                    value={newPasswordForReset}
+                    onChange={(e) => setNewPasswordForReset(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+                  />
+                  <Input
+                    placeholder="OTP"
+                    value={resetPasswordOtp}
+                    onChange={(e) => setResetPasswordOtp(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-blue-100 focus:border-blue-500"
+                  />
+                  <Button
+                    onClick={handleResetPassword}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white transition-colors duration-300"
+                  >
+                    Reset Password
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+      <CardFooter className="flex justify-end space-x-2 border-t border-gray-800 pt-4">
+        {isEditing ? (
+          <>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(false)}
+              className="border-blue-500 text-blue-400 hover:bg-blue-900"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              className="bg-green-600 hover:bg-green-700 text-white transition-colors duration-300"
+            >
+              Save Changes
+            </Button>
+          </>
+        ) : (
+          <Button
+            onClick={() => setIsEditing(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300"
+          >
+            Edit
+          </Button>
+        )}
+      </CardFooter>
+    </Card>
+  );
 };
 
 interface Address {
-  id: string;
-  type: string;
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
   country: string;
-  isDefault: boolean;
+  address: string;
+  isDefault?: boolean;
 }
 
 const AddressContent: React.FC = () => {
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      id: "1",
-      type: "Home",
-      street: "123 Main St",
-      city: "Anytown",
-      state: "CA",
-      zipCode: "12345",
-      country: "USA",
-      isDefault: true,
-    },
-    {
-      id: "2",
-      type: "Work",
-      street: "456 Office Blvd",
-      city: "Workville",
-      state: "NY",
-      zipCode: "67890",
-      country: "USA",
-      isDefault: false,
-    },
-  ]);
-
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [newAddress, setNewAddress] = useState<
-    Omit<Address, "id" | "isDefault">
-  >({
-    type: "",
-    street: "",
-    city: "",
-    state: "",
-    zipCode: "",
+  const [newAddress, setNewAddress] = useState<Address>({
     country: "",
+    address: "",
   });
 
-  const handleSetDefault = (id: string) => {
-    setAddresses(
-      addresses.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === id,
-      }))
-    );
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const fetchAddresses = async () => {
+    setIsLoading(true);
+    try {
+      const response = await get("/user/user-detail", "user");
+      setAddresses(response.address || []);
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+      toast.error("Failed to load addresses");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddressChange = (field: string, value: string) => {
+  const handleSetDefault = async (index: number) => {
+    const updatedAddresses = addresses.map((addr, i) => ({
+      ...addr,
+      isDefault: i === index,
+    }));
+
+    try {
+      await put("/user/update/user-detail", "user", {
+        address: updatedAddresses,
+      });
+      setAddresses(updatedAddresses);
+      toast.success("Default address updated successfully");
+    } catch (error) {
+      console.error("Error updating default address:", error);
+      toast.error("Failed to update default address");
+    }
+  };
+
+  const handleAddressChange = (field: keyof Address, value: string) => {
     setNewAddress((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAddNewAddress = () => {
-    const newAddr: Address = {
-      ...newAddress,
-      id: (addresses.length + 1).toString(),
-      isDefault: false,
-    };
-    setAddresses([...addresses, newAddr]);
-    setIsAddingNew(false);
-    setNewAddress({
-      type: "",
-      street: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      country: "",
-    });
+  const handleAddNewAddress = async () => {
+    try {
+      const updatedAddresses = [...addresses, newAddress];
+      await put("/user/update/user-detail", "user", {
+        address: updatedAddresses,
+      });
+      setAddresses(updatedAddresses);
+      setIsAddingNew(false);
+      setNewAddress({ country: "", address: "" });
+      toast.success("New address added successfully");
+    } catch (error) {
+      console.error("Error adding new address:", error);
+      toast.error("Failed to add new address");
+    }
   };
+
+  if (isLoading) {
+    return <div className="text-blue-400">Loading addresses...</div>;
+  }
 
   return (
     <div className="space-y-8 p-6 bg-background_secondary text-gray-100">
       <h2 className="text-2xl font-bold text-blue-300">Addresses</h2>
       <div className="grid gap-6 md:grid-cols-2">
-        {addresses.map((address) => (
-          <Card key={address.id} className="bg-gray-800 border-gray-700">
+        {addresses.map((address, index) => (
+          <Card key={index} className="bg-gray-800 border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center justify-between text-blue-300">
-                <span>{address.type}</span>
+                <span>Address {index + 1}</span>
                 {address.isDefault && (
                   <Badge variant="secondary" className="bg-blue-600 text-white">
                     Default
@@ -215,8 +651,7 @@ const AddressContent: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="text-gray-300">
-              <p>{address.street}</p>
-              <p>{`${address.city}, ${address.state} ${address.zipCode}`}</p>
+              <p>{address.address}</p>
               <p>{address.country}</p>
             </CardContent>
             <CardFooter className="flex justify-between">
@@ -229,7 +664,7 @@ const AddressContent: React.FC = () => {
               {!address.isDefault && (
                 <Button
                   variant="secondary"
-                  onClick={() => handleSetDefault(address.id)}
+                  onClick={() => handleSetDefault(index)}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Set as Default
@@ -253,8 +688,13 @@ const AddressContent: React.FC = () => {
                   </Label>
                   <Input
                     id={field}
-                    value={newAddress[field as keyof typeof newAddress]}
-                    onChange={(e) => handleAddressChange(field, e.target.value)}
+                    value={newAddress[field as keyof Address] as string}
+                    onChange={(e) =>
+                      handleAddressChange(
+                        field as keyof Address,
+                        e.target.value
+                      )
+                    }
                     className="bg-gray-700 border-gray-600 text-gray-100"
                   />
                 </div>
@@ -314,16 +754,17 @@ const OrderContent: React.FC = () => {
   const [reversalReason, setReversalReason] = useState("");
   const [isReversalModalOpen, setIsReversalModalOpen] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const response = await get<Order[]>(
           `/order/${activeTab.toLowerCase()}`,
           "order"
         );
-        console.log(response);
 
         // Map the response to match the expected Order interface
         const mappedOrders = response.map((order: any) => ({
@@ -349,6 +790,8 @@ const OrderContent: React.FC = () => {
         setOrders(mappedOrders);
       } catch (error) {
         console.error("Error fetching orders:", error);
+        setError("Failed to load orders. Please try again later.");
+        toast.error("Failed to load orders");
       } finally {
         setIsLoading(false);
       }
@@ -494,6 +937,14 @@ const OrderContent: React.FC = () => {
     }
   };
 
+  if (isLoading) {
+    return <div className="text-blue-400">Loading orders...</div>;
+  }
+
+  if (error) {
+    return <ErrorDisplay message={error} />;
+  }
+
   return (
     <div className="container mx-auto p-4 bg-background_secondary text-gray-100">
       <Tabs
@@ -602,43 +1053,154 @@ const PaymentContent: React.FC = () => {
   );
 };
 
-const MessageContent: React.FC = () => {
+const NotificationContent: React.FC = () => {
+  const [preferences, setPreferences] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    fetchPreferences();
+  }, []);
+
+  const fetchPreferences = async () => {
+    try {
+      const response = await get(
+        "/notification_preferences/preferences",
+        "other"
+      );
+      setPreferences(response.preferences);
+    } catch (error) {
+      console.error("Lỗi khi lấy tùy chọn:", error);
+    }
+  };
+
+  const togglePreference = async (preferenceName: string) => {
+    try {
+      await put(
+        `/notification_preferences/preferences/${preferenceName}`,
+        "other"
+      );
+      setPreferences((prev) => ({
+        ...prev,
+        [preferenceName]: !prev[preferenceName],
+      }));
+    } catch (error) {
+      console.error("Error updating preference:", error);
+    }
+  };
+
+  const preferenceItems = [
+    {
+      name: "order_notification",
+      label: "Order Notifications",
+      description: "Receive updates about your orders",
+    },
+    {
+      name: "marketing_notification",
+      label: "Marketing Notifications",
+      description: "Receive promotional offers and updates",
+    },
+    {
+      name: "message_notification",
+      label: "Message Notifications",
+      description: "Receive notifications for new messages",
+    },
+    {
+      name: "feedback_notification",
+      label: "Feedback Notifications",
+      description: "Receive notifications for feedback requests",
+    },
+    {
+      name: "email_notification",
+      label: "Email Notifications",
+      description: "Receive notifications via email",
+    },
+    {
+      name: "account_notification",
+      label: "Account Notifications",
+      description: "Receive updates about your account",
+    },
+    {
+      name: "other_notification",
+      label: "Other Notifications",
+      description: "Receive other miscellaneous notifications",
+    },
+  ];
+
   return (
     <Card className="bg-background_secondary text-foreground">
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
           <MessageCircle className="w-6 h-6" />
-          <span>Message Preferences</span>
+          <span>Notification Preferences</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Label>Email Notifications</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive order updates via email
-            </p>
+        {preferenceItems.map((item) => (
+          <div key={item.name} className="flex items-center justify-between">
+            <div>
+              <Label>{item.label}</Label>
+              <p className="text-sm text-muted-foreground">
+                {item.description}
+              </p>
+            </div>
+            <Switch
+              checked={preferences[item.name] || false}
+              onCheckedChange={() => togglePreference(item.name)}
+            />
           </div>
-          <Switch />
-        </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <Label>SMS Notifications</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive order updates via SMS
-            </p>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
+const MessageContent: React.FC = () => {
+  const mockMessages = [
+    {
+      id: 1,
+      sender: "John Doe",
+      content: "Hello, how are you?",
+      timestamp: "2023-04-15T10:30:00Z",
+    },
+    {
+      id: 2,
+      sender: "Jane Smith",
+      content: "Can you help me with my order?",
+      timestamp: "2023-04-14T15:45:00Z",
+    },
+    {
+      id: 3,
+      sender: "Support Team",
+      content: "Your ticket has been resolved.",
+      timestamp: "2023-04-13T09:00:00Z",
+    },
+  ];
+
+  return (
+    <Card className="bg-background_secondary text-foreground">
+      <CardHeader>
+        <CardTitle className="flex items-center space-x-2">
+          <MessageCircle className="w-6 h-6" />
+          <span>Messages</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {mockMessages.map((message) => (
+          <div key={message.id} className="border-b border-gray-700 pb-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-semibold text-blue-400">
+                {message.sender}
+              </span>
+              <span className="text-sm text-gray-400">
+                {format(new Date(message.timestamp), "PPp")}
+              </span>
+            </div>
+            <p className="text-gray-300">{message.content}</p>
           </div>
-          <Switch />
-        </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <Label>Push Notifications</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive notifications on your device
-            </p>
-          </div>
-          <Switch />
-        </div>
+        ))}
+        <Button className="w-full mt-4">
+          <MessageCircle className="w-4 h-4 mr-2" />
+          Send New Message
+        </Button>
       </CardContent>
     </Card>
   );

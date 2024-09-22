@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { postPublic } from "@/utils/authUtils";
+import { useGoogleLogin } from "@react-oauth/google";
+import { FaFacebook, FaGoogle, FaGithub } from "react-icons/fa";
 
 interface ApiError extends Error {
   response?: {
@@ -102,7 +103,7 @@ const RegisterPage: React.FC = () => {
             whileHover={{ scale: 1.1 }}
             transition={{ type: "spring", stiffness: 300 }}
           />
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-400">
             Create an account
           </h2>
           <p className="text-xs sm:text-sm text-gray-600">
@@ -148,11 +149,43 @@ const RegisterPage: React.FC = () => {
             )}
           </AnimatePresence>
           <Button
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-300 text-sm sm:text-base"
+            className="w-full bg-white hover:bg-blue-700 text-black transition-colors duration-300 text-sm sm:text-base"
             onClick={showOTPInput ? handleOTPSubmit : handleEmailSubmit}
           >
             {showOTPInput ? "Verify OTP" : "Register"}
           </Button>
+
+          <div className="mt-6">
+            <p className="text-center text-sm text-gray-600 mb-4">
+              Continue with...
+            </p>
+            <div className="flex justify-between gap-2">
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled
+              >
+                <FaFacebook className="text-blue-600" />
+                <span>Facebook</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled
+              >
+                <FaGoogle className="text-red-500" />
+                <span>Google</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled
+              >
+                <FaGithub className="text-gray-800" />
+                <span>Github</span>
+              </Button>
+            </div>
+          </div>
         </CardContent>
         <div className="text-center pb-4">
           <p className="text-xs sm:text-sm text-gray-600">

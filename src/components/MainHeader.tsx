@@ -18,9 +18,12 @@ import {
   Moon,
   LogOut,
   Menu,
+  Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { get, del, put } from "@/utils/authUtils";
 import SearchBar from "./SearchBar";
+import { BACKEND_OTHER_URI } from "@/api";
 
 interface User {
   user_id: string;
@@ -82,7 +85,9 @@ const MainHeader: React.FC = () => {
               variant="ghost"
               size="icon"
               className="sm:hidden"
-              onClick={() => {/* Toggle mobile menu */}}
+              onClick={() => {
+                /* Toggle mobile menu */
+              }}
             >
               <Menu size={24} />
             </Button>
@@ -112,32 +117,193 @@ const AnimatedIconButton: React.FC<{
   </motion.div>
 );
 
-const NotificationDropdown: React.FC = () => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-gray-600 hover:text-primary"
-        >
-          <Bell size={20} />
-        </Button>
-      </motion.div>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end" className="w-64">
-      <DropdownMenuItem>New message 1</DropdownMenuItem>
-      <DropdownMenuItem>New message 2</DropdownMenuItem>
-      <DropdownMenuItem>New message 3</DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+interface Notification {
+  _id: string;
+  title: string;
+  content: string;
+  notification_type: string;
+  target_type: "individual" | "group" | "role" | "server-wide";
+  target_ids: string[];
+  target_role?: string;
+  related?: {
+    path: string;
+  };
+  can_delete: boolean;
+  can_mark_as_read: boolean;
+  is_read: boolean;
+  created_at: string;
+}
+
+const NotificationDropdown: React.FC = () => {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const fetchNotifications = async () => {
+    setIsLoading(true);
+    try {
+      const response = await get<{ data: Notification[] }>(
+        `/notification/${page}`,
+        "other"
+      );
+      setNotifications((prevNotifications) => [
+        ...prevNotifications,
+        ...(Array.isArray(response) ? response : [response]),
+      ]);
+      setPage((prevPage) => prevPage + 1);
+      setPage((prevPage) => prevPage + 1);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+    setIsLoading(false);
+  };
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+
+  useEffect(() => {
+    fetchNotifications();
+    // Thiết lập kết nối SSE
+
+    const eventSource = new EventSource(
+      `${BACKEND_OTHER_URI}/sse?userId=${currentUser.user_id}`
+    );
+
+    eventSource.onmessage = (event) => {
+      const newNotification = JSON.parse(event.data);
+      setNotifications((prevNotifications) => [
+        newNotification,
+        ...prevNotifications,
+      ]);
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("SSE Error:", error);
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [currentUser.user_id]);
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await put(`/notification/mark-as-read/${notificationId}`, "other");
+      setNotifications((prevNotifications) =>
+        prevNotifications.map((notif) =>
+          notif._id === notificationId ? { ...notif, is_read: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const handleDelete = async (notificationId: string) => {
+    try {
+      await del(`/notification/${notificationId}`, "other");
+      setNotifications((prevNotifications) =>
+        prevNotifications.filter((notif) => notif._id !== notificationId)
+      );
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    if (notification.can_mark_as_read) {
+      handleMarkAsRead(notification._id);
+    }
+    if (notification.related?.path) {
+      navigate(notification.related.path);
+    }
+  };
+
+  return (
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <motion.div whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-gray-600 hover:text-primary"
+          >
+            <Bell size={20} />
+          </Button>
+        </motion.div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="w-80 max-h-96 overflow-y-auto bg-background_secondary"
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        {notifications.map((notification) => (
+          <DropdownMenuItem
+            key={notification._id}
+            className="flex items-center justify-between p-4 hover:bg-gray-100 cursor-pointer"
+            onClick={() => handleNotificationClick(notification)}
+            onSelect={(e) => e.preventDefault()}
+          >
+            <div>
+              <h4
+                className={`font-semibold ${
+                  notification.is_read ? "text-gray-600" : "text-foreground"
+                }`}
+              >
+                {notification.title}
+              </h4>
+              <p className="text-sm text-gray-500">{notification.content}</p>
+              <span className="text-xs text-gray-400">
+                {new Date(notification.created_at).toLocaleString()}
+              </span>
+            </div>
+            {notification.can_delete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  handleDelete(notification._id);
+                }}
+              >
+                <Trash2 size={16} />
+              </Button>
+            )}
+          </DropdownMenuItem>
+        ))}
+        {isLoading && (
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="justify-center"
+          >
+            Loading...
+          </DropdownMenuItem>
+        )}
+        {!isLoading && notifications.length > 0 && (
+          <DropdownMenuItem
+            onClick={fetchNotifications}
+            onSelect={(e) => e.preventDefault()}
+            className="justify-center"
+          >
+            <p>Load more</p>
+          </DropdownMenuItem>
+        )}
+        {!isLoading && notifications.length === 0 && (
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            No notifications
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 const UserDropdown: React.FC<{ currentUser: User }> = ({ currentUser }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Implement logout logic here
     localStorage.removeItem("currentUser");
     navigate("/login");
   };

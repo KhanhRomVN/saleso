@@ -7,7 +7,39 @@ interface NotImplementedNoticeProps {
   title: string;
 }
 
-const NotImplementedNotice: React.FC<NotImplementedNoticeProps> = ({
+interface ErrorDisplayProps {
+  message: string;
+  onRetry?: () => void;
+}
+
+export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
+  message,
+  onRetry,
+}) => {
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-4">
+      <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{message}</AlertDescription>
+      </Alert>
+      {onRetry && (
+        <Button variant="outline" onClick={onRetry}>
+          Try Again
+        </Button>
+      )}
+      <Button
+        variant="outline"
+        onClick={() => window.history.back()}
+        className="mt-2"
+      >
+        Go Back
+      </Button>
+    </div>
+  );
+};
+
+export const NotImplementedNotice: React.FC<NotImplementedNoticeProps> = ({
   title,
 }) => {
   return (
@@ -26,5 +58,3 @@ const NotImplementedNotice: React.FC<NotImplementedNoticeProps> = ({
     </div>
   );
 };
-
-export default NotImplementedNotice;
