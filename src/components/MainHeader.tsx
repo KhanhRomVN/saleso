@@ -327,11 +327,11 @@ const UserDropdown: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         </motion.div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 bg-background_secondary">
-        <DropdownMenuItem onClick={() => navigate("/setting")}>
+        <DropdownMenuItem onClick={() => navigate("/setting/account")}>
           <User className="mr-2 h-4 w-4" />
           <span>My Account</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate("/setting")}>
+        <DropdownMenuItem onClick={() => navigate("/setting/order")}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
         </DropdownMenuItem>

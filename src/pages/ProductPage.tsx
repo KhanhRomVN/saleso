@@ -192,6 +192,12 @@ export default function ProductPage() {
 
   const handleSubmitFeedback = async () => {
     if (product) {
+      console.log({
+        product_id: product._id,
+        rating: userRating,
+        comment: userComment,
+        images: feedbackImages,
+      });
       try {
         await post("/feedback", "product", {
           product_id: product._id,
@@ -333,7 +339,7 @@ const ProductDetails: React.FC<{
   productRating: ProductRating | null;
 }> = ({ product, productRating }) => {
   const { openProductActionSidebar } = useContext(ProductActionSidebarContext);
-
+  const navigate = useNavigate();
   const handleAddToWishlist = useCallback(async () => {
     try {
       await post(`/wishlist/items/${product._id}`, "order");
@@ -347,6 +353,22 @@ const ProductDetails: React.FC<{
       }
     }
   }, [product._id]);
+
+  const handleChatWithSeller = useCallback(
+    async (seller_id: any) => {
+      try {
+        const conversation = await post("/conversation/create", "other", {
+          seller_id,
+        });
+        console.log(conversation);
+        // nếu conversation là object thì lấy conversation_id = conversation._id còn không thì lấy thẳng conversation
+        const conversation_id =
+          typeof conversation === "object" ? conversation._id : conversation;
+        navigate(`/setting/message/${conversation_id}`);
+      } catch (error) {}
+    },
+    [product.seller_id]
+  );
 
   const discountPrice = useMemo(() => {
     const basePrice = product.variants[0]?.price || 0;
@@ -552,6 +574,13 @@ const ProductDetails: React.FC<{
         >
           <Heart className="mr-3 h-6 w-6" />
           Add to Wishlist
+        </Button>
+        <Button
+          onClick={() => handleChatWithSeller(product.seller_id)}
+          className="w-full bg-blue_background_opacity hover:bg-blue-700 text-white transition-all duration-300 transform hover:scale-105 shadow-lg text-base py-6"
+        >
+          <ShoppingCart className="mr-3 h-6 w-6" />
+          Chat with Seller
         </Button>
       </motion.div>
     </motion.div>

@@ -6,10 +6,18 @@ import WishlistPage from "./pages/WishlistPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
-import SettingPage from "./pages/SettingPage";
 import SearchPage from "./pages/SearchPage";
 import DefaultLayout from "@/layout/defaultLayout";
 import PaymentPage from "./pages/PaymentPage";
+// Setting
+import SettingLayout from "./layout/settingLayout";
+import AccountContentPage from "./pages/Setting/AccountContentPage";
+import AddressContentPage from "./pages/Setting/AddressContentPage";
+import OrderContentPage from "./pages/Setting/OrderContentPage";
+import PaymentContentPage from "./pages/Setting/PaymentContentPage";
+import NotificationContentPage from "./pages/Setting/NotificationContentPage";
+import MessageContentPage from "./pages/Setting/MessageContentPage";
+import OtherContentPage from "./pages/Setting/OtherContentPage";
 
 const publicRoutes = [
   {
@@ -69,13 +77,87 @@ const publicRoutes = [
     ),
   },
   {
-    path: "/setting",
+    path: "/setting/account",
     element: (
       <DefaultLayout>
-        <SettingPage />
+        <SettingLayout>
+          <AccountContentPage />
+        </SettingLayout>
       </DefaultLayout>
     ),
   },
+  {
+    path: "/setting/address",
+    element: (
+      <DefaultLayout>
+        <SettingLayout>
+          <AddressContentPage />
+        </SettingLayout>
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: "/setting/payment",
+    element: (
+      <DefaultLayout>
+        <SettingLayout>
+          <PaymentContentPage />
+        </SettingLayout>
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: "/setting/notification",
+    element: (
+      <DefaultLayout>
+        <SettingLayout>
+          <NotificationContentPage />
+        </SettingLayout>
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: "/setting/message",
+    element: (
+      <DefaultLayout>
+        <SettingLayout>
+          <MessageContentPage />
+        </SettingLayout>
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: "/setting/message/:conversation_id",
+    element: (
+      <DefaultLayout>
+        <SettingLayout>
+          <MessageContentPage />
+        </SettingLayout>
+      </DefaultLayout>
+    ),
+  },
+
+  {
+    path: "/setting/order",
+    element: (
+      <DefaultLayout>
+        <SettingLayout>
+          <OrderContentPage />
+        </SettingLayout>
+      </DefaultLayout>
+    ),
+  },
+  {
+    path: "/setting/other",
+    element: (
+      <DefaultLayout>
+        <SettingLayout>
+          <OtherContentPage />
+        </SettingLayout>
+      </DefaultLayout>
+    ),
+  },
+
   {
     path: "/search/:value",
     element: (
