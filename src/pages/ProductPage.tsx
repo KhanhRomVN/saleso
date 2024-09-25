@@ -29,7 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { getPublic, post, put } from "@/utils/authUtils";
+import { getPublic, post, postPublic, put } from "@/utils/authUtils";
 import { ProductActionSidebarContext } from "@/context/ProductActionSidebarContext";
 import { toast } from "react-toastify";
 import ProductActionSidebar from "@/components/ProductActionSidebar";
@@ -90,11 +90,6 @@ interface ProductRating {
   totalReviews: number;
   ratingDistribution: { rating: number; count: number }[];
   averageRating: number;
-}
-
-interface ProductRatingResponse {
-  message: string;
-  data: ProductRating;
 }
 
 export default function ProductPage() {
@@ -170,16 +165,16 @@ export default function ProductPage() {
       if (product) {
         try {
           const [ratingResponse, feedbacksResponse] = await Promise.all([
-            getPublic<ProductRatingResponse>(
-              `/feedback/product/${product._id}/rating`,
+            postPublic<ProductRating>(
+              `/feedback/product/rating/${product._id}`,
               "product"
             ),
             getPublic<Feedback[]>(
-              `/feedback/product/${product._id}`,
+              `/feedback/product/${product._id}/1`,
               "product"
             ),
           ]);
-          setProductRating(ratingResponse.data);
+          setProductRating(ratingResponse);
           setFeedbacks(feedbacksResponse);
         } catch (error) {
           console.error("Error fetching rating and feedbacks:", error);
@@ -192,12 +187,6 @@ export default function ProductPage() {
 
   const handleSubmitFeedback = async () => {
     if (product) {
-      console.log({
-        product_id: product._id,
-        rating: userRating,
-        comment: userComment,
-        images: feedbackImages,
-      });
       try {
         await post("/feedback", "product", {
           product_id: product._id,
@@ -360,7 +349,6 @@ const ProductDetails: React.FC<{
         const conversation = await post("/conversation/create", "other", {
           seller_id,
         });
-        console.log(conversation);
         // nếu conversation là object thì lấy conversation_id = conversation._id còn không thì lấy thẳng conversation
         const conversation_id =
           typeof conversation === "object" ? conversation._id : conversation;

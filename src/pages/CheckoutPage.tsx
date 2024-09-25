@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -78,6 +77,12 @@ interface ProductResponse {
   variants: Variant[];
 }
 
+interface Address {
+  country: string;
+  address: string;
+  isDefault: boolean;
+}
+
 const CheckoutPage: React.FC = () => {
   const { session_id } = useParams<{ session_id: string }>();
   const navigate = useNavigate();
@@ -87,6 +92,7 @@ const CheckoutPage: React.FC = () => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const [userAddresses, setUserAddresses] = useState<Address[]>([]);
 
   useEffect(() => {
     const fetchCheckoutData = async () => {
@@ -164,6 +170,37 @@ const CheckoutPage: React.FC = () => {
     fetchCheckoutData();
   }, [session_id, navigate]);
 
+  useEffect(() => {
+    const fetchUserAddresses = async () => {
+      try {
+        const response = await authUtils.get<Address[]>(
+          "/user/user-address",
+          "user"
+        );
+
+        console.log(response);
+
+        if (response.length === 0) {
+          toast.error(
+            "You don't have any addresses. Redirecting to address settings..."
+          );
+          navigate("/setting/address");
+        } else {
+          setUserAddresses(response);
+          const defaultAddress = response.find((address) => address.isDefault);
+          if (defaultAddress) {
+            setShippingAddress(defaultAddress.address);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user addresses:", error);
+        toast.error("Failed to load user addresses. Please try again.");
+      }
+    };
+
+    fetchUserAddresses();
+  }, [navigate]);
+
   const calculateTotal = useCallback((data: CheckoutItem[]) => {
     const subtotal = data.reduce(
       (acc, item) => acc + item.price * item.quantity,
@@ -189,7 +226,7 @@ const CheckoutPage: React.FC = () => {
     }
   };
 
-  const applyDiscount = (index: number, discount: Discount) => {
+  const applyDiscount = async (index: number, discount: Discount) => {
     const updatedCheckoutData = [...checkoutData];
     const item = updatedCheckoutData[index];
 
@@ -210,6 +247,12 @@ const CheckoutPage: React.FC = () => {
       item.applied_discount = discount._id;
       setCheckoutData(updatedCheckoutData);
       calculateTotal(updatedCheckoutData);
+      // discount usage
+      await authUtils.post("/discount_usage", "product", {
+        discount_id: discount._id,
+        product_id: item.product_id,
+        discount_cost: discount.value,
+      });
       toast.success(`Discount ${discount.code} applied successfully!`);
     } else {
       toast.error("This discount cannot be applied to this item.");
@@ -313,6 +356,7 @@ const CheckoutPage: React.FC = () => {
             setPaymentMethod={setPaymentMethod}
             totalAmount={totalAmount}
             handleCheckout={handleCheckout}
+            userAddresses={userAddresses}
           />
         </div>
       </div>
@@ -367,6 +411,7 @@ const OrderSummary: React.FC<{
   setPaymentMethod: (method: string) => void;
   totalAmount: number;
   handleCheckout: () => Promise<void>;
+  userAddresses: { country: string; address: string; isDefault: boolean }[]; // Add userAddresses prop
 }> = ({
   shippingAddress,
   setShippingAddress,
@@ -374,6 +419,7 @@ const OrderSummary: React.FC<{
   setPaymentMethod,
   totalAmount,
   handleCheckout,
+  userAddresses, // Destructure userAddresses prop
 }) => (
   <Card className="bg-background_secondary">
     <CardHeader>
@@ -385,13 +431,21 @@ const OrderSummary: React.FC<{
           <Truck className="w-5 h-5 mr-2" />
           Shipping Information
         </h2>
-        <Input
-          type="text"
+        <Select
           value={shippingAddress}
-          onChange={(e) => setShippingAddress(e.target.value)}
-          placeholder="Enter shipping address"
-          className="w-full"
-        />
+          onValueChange={(value: string) => setShippingAddress(value)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select shipping address" />
+          </SelectTrigger>
+          <SelectContent>
+            {userAddresses.map((address, index) => (
+              <SelectItem key={index} value={address.address}>
+                {address.address}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div>
@@ -472,7 +526,10 @@ const DiscountDialog: React.FC<DiscountDialogProps> = ({
         </DialogHeader>
         <div className="grid gap-4 py-4">
           {item.discounts.map((discount) => (
-            <div key={discount._id} className="bg-gray-100 p-4 rounded-lg">
+            <div
+              key={discount._id}
+              className="bg-background_secondary p-4 rounded-lg"
+            >
               <div className="flex justify-between items-center mb-2">
                 <span className="text-lg font-semibold">{discount.code}</span>
                 <Button
@@ -489,7 +546,7 @@ const DiscountDialog: React.FC<DiscountDialogProps> = ({
               <div className="flex items-center text-sm text-gray-600 mb-1">
                 <DollarSign className="w-4 h-4 mr-2" />
                 <span>
-                  Min. Purchase: ${discount.minimum_purchase.toFixed(2)}
+                  Min purchase: ${discount.minimum_purchase.toFixed(2)}
                 </span>
               </div>
               <div className="flex items-center text-sm text-gray-600 mb-1">
