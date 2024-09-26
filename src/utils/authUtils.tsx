@@ -85,7 +85,6 @@ const handleRequest = async (
 ): Promise<any> => {
   const accessToken = localStorage.getItem("accessToken");
   if (!accessToken) {
-    console.log("No access token found. Attempting to refresh...");
     return refreshTokenAndRetry(method, url, service, body);
   }
 
@@ -99,7 +98,6 @@ const handleRequest = async (
     return response.data.data; // Chỉ trả về phần 'data' của response
   } catch (error: any) {
     if (error.response?.data?.error === "Unauthorized - Invalid accessToken") {
-      console.log("Invalid access token. Attempting to refresh...");
       return refreshTokenAndRetry(method, url, service, body);
     }
     throw error;

@@ -51,7 +51,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     if (isCrop) {
       setIsModalOpen(true);
     } else {
-      console.log("Cc");
       handleUploadImages(files);
     }
   };

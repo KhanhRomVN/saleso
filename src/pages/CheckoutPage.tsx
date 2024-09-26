@@ -178,8 +178,6 @@ const CheckoutPage: React.FC = () => {
           "user"
         );
 
-        console.log(response);
-
         if (response.length === 0) {
           toast.error(
             "You don't have any addresses. Redirecting to address settings..."

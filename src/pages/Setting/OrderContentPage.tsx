@@ -225,7 +225,6 @@ const OrderContent: React.FC = () => {
 
   const handleReversalSubmit = async () => {
     try {
-      console.log(currentOrderId);
       await post(`/reversal/${currentOrderId}`, "order", {
         reason: reversalReason,
       });
@@ -255,6 +254,7 @@ const OrderContent: React.FC = () => {
           </div>
           <Skeleton className="h-10 w-full" />
         </CardContent>
+
         <CardFooter className="flex justify-end space-x-2 border-t border-gray-800 pt-4">
           <Skeleton className="h-10 w-24" />
         </CardFooter>

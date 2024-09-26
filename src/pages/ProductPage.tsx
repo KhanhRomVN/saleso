@@ -149,11 +149,7 @@ export default function ProductPage() {
   useEffect(() => {
     if (product) {
       const timer = setTimeout(() => {
-        put(`/product_analytic/visitor/${product._id}`, "analytics", {})
-          .then(() => console.log("Visitor analytics updated"))
-          .catch((error) =>
-            console.error("Error updating visitor analytics:", error)
-          );
+        put(`/product_analytic/visitor/${product._id}`, "analytics", {});
       }, 15000);
 
       return () => clearTimeout(timer);

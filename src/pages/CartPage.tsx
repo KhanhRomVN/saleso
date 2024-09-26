@@ -57,7 +57,6 @@ const CartPage: React.FC = () => {
   const fetchCartData = async () => {
     try {
       const data = await get<CartData>(`/cart`, "order");
-      console.log(data);
       setCartData(data);
       setLoading(false);
     } catch (error) {
